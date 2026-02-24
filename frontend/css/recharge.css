@@ -150,27 +150,29 @@
 .custom-item-form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 12px;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-base);
 }
 
 .custom-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    flex-wrap: wrap;
 }
 
 .custom-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    min-width: 180px;
-    flex: 1;
+    min-width: 0;
 }
 
 .custom-field-wide {
-    flex: 2;
-    min-width: 260px;
+    grid-column: 1 / -1;
 }
 
 .custom-field label {
@@ -179,25 +181,45 @@
     font-weight: 600;
 }
 
-.custom-field input,
-.custom-field select,
-.custom-field textarea {
+#recharge-container .custom-field input,
+#recharge-container .custom-field select,
+#recharge-container .custom-field textarea {
     width: 100%;
-    background: var(--bg-base);
+    background: var(--bg-raised);
     color: var(--text-primary);
-    border: 1px solid var(--border-bright);
+    border: 2px solid var(--border-bright);
     border-radius: 8px;
-    padding: 9px 10px;
+    padding: 11px 12px;
     font-family: var(--font-base);
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
-.custom-field input:focus,
-.custom-field select:focus,
-.custom-field textarea:focus {
+#recharge-container .custom-field input::placeholder,
+#recharge-container .custom-field textarea::placeholder {
+    color: var(--text-muted);
+}
+
+#recharge-container .custom-field input:focus,
+#recharge-container .custom-field select:focus,
+#recharge-container .custom-field textarea:focus {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
     border-color: var(--accent-dim);
+}
+
+#recharge-container .custom-field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2300c4a7' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 34px;
+}
+
+#recharge-container .custom-field textarea {
+    resize: vertical;
+    min-height: 96px;
 }
 
 .custom-actions {
@@ -205,6 +227,7 @@
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    padding-top: 2px;
 }
 
 .custom-item-message {
@@ -225,7 +248,7 @@
 .custom-item {
     border: 1px solid var(--border-bright);
     border-radius: var(--radius-md);
-    background: var(--bg-base);
+    background: linear-gradient(180deg, var(--bg-raised) 0%, var(--bg-base) 100%);
     padding: 12px;
     display: flex;
     flex-direction: column;
@@ -259,5 +282,9 @@
 @media (max-width: 700px) {
     #recharge-search {
         min-width: 100%;
+    }
+
+    .custom-row {
+        grid-template-columns: 1fr;
     }
 }

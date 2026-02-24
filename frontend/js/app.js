@@ -1177,7 +1177,11 @@ function addMessage(text, role) {
     }
     if (displayText) {
         const span = document.createElement('span');
-        span.textContent = displayText;
+        if (role === 'assistant') {
+            span.innerHTML = formatAssistantMessage(displayText);
+        } else {
+            span.textContent = displayText;
+        }
         messageDiv.appendChild(span);
     }
     if (!imageData && !displayText) {
@@ -1191,6 +1195,31 @@ function addMessage(text, role) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     return messageId;
+}
+
+function formatAssistantMessage(text) {
+    let safe = escapeHtml(String(text ?? ''));
+
+    safe = safe.replace(/\r\n/g, '\n');
+
+    // Add readability for numbered/bulleted points that often arrive in one run-on line.
+    safe = safe.replace(/\s(\d+\.\s)/g, '<br>$1');
+    safe = safe.replace(/\s([•-]\s)/g, '<br>$1');
+
+    // Basic markdown-like formatting
+    safe = safe.replace(/^#{1,6}\s+(.+)$/gm, '<strong>$1</strong>');
+    safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    safe = safe.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Markdown links: [label](https://...)
+    safe = safe.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+    // Preserve line breaks from model output
+    safe = safe.replace(/\n/g, '<br>');
+
+    // Collapse excessive blank lines
+    safe = safe.replace(/(<br>){3,}/g, '<br><br>');
+    return safe;
 }
 
 function removeMessage(id) {
