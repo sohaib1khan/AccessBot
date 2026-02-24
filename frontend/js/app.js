@@ -2,6 +2,11 @@
 const API_URL = '/api';
 let authToken = localStorage.getItem('authToken');
 let currentConversationId = parseInt(localStorage.getItem('activeConversationId')) || null;
+let isRequestInFlight = false;
+let longWaitTimer = null;
+let liveSyncTimer = null;
+let activeConversationSignature = null;
+let isSyncingConversation = false;
 
 // Global fetch wrapper — redirects to login on 401 (expired/invalid token)
 async function apiFetch(url, options = {}) {
@@ -57,8 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (savedId) loadConversation(savedId);
         });
         checkDailyCheckin();
+        startLiveSync();
     } else {
         showAuth();
+        stopLiveSync();
     }
     
     setupEventListeners();
@@ -192,6 +199,91 @@ function setupEventListeners() {
             sendMessage();
         }
     });
+
+    // Help chatbot widget
+    setupHelpChatbot();
+}
+
+function setupHelpChatbot() {
+    const toggle = document.getElementById('help-chat-toggle');
+    const panel = document.getElementById('help-chat-panel');
+    const closeBtn = document.getElementById('help-chat-close');
+    const promptButtons = document.querySelectorAll('.help-chat-prompt');
+    const customInput = document.getElementById('help-chat-input');
+    const customSend = document.getElementById('help-chat-send');
+    if (!toggle || !panel) return;
+
+    const openPanel = () => {
+        panel.hidden = false;
+        toggle.setAttribute('aria-expanded', 'true');
+    };
+
+    const closePanel = () => {
+        panel.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+    };
+
+    toggle.addEventListener('click', () => {
+        if (panel.hidden) {
+            openPanel();
+        } else {
+            closePanel();
+        }
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closePanel);
+
+    promptButtons.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const prompt = btn.dataset.helpPrompt;
+            if (!prompt) return;
+
+            messageInput.value = buildSiteHelpPrompt(prompt);
+            closePanel();
+
+            if (sendBtn.disabled || isRequestInFlight) return;
+            await sendMessage();
+        });
+    });
+
+    const submitCustomHelp = async () => {
+        if (!customInput) return;
+        const question = customInput.value.trim();
+        if (!question) return;
+
+        messageInput.value = buildSiteHelpPrompt(question);
+        customInput.value = '';
+        closePanel();
+
+        if (sendBtn.disabled || isRequestInFlight) return;
+        await sendMessage();
+    };
+
+    if (customSend) customSend.addEventListener('click', submitCustomHelp);
+    if (customInput) {
+        customInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                await submitCustomHelp();
+            }
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (panel.hidden) return;
+        if (!panel.contains(e.target) && !toggle.contains(e.target)) {
+            closePanel();
+        }
+    });
+}
+
+function buildSiteHelpPrompt(question) {
+    return [
+        'Help mode: You are the in-app help assistant for the AccessBot website.',
+        'Answer only about using this site and its features (chat, conversations, check-in, insights, resources, settings, accessibility, login/logout).',
+        'If the question is unrelated to AccessBot site usage, politely decline and ask the user to ask a site-related question.',
+        `User help question: ${question}`
+    ].join(' ');
 }
 
 // ──────────────────────────────────────────────
@@ -207,10 +299,12 @@ async function loadConversations() {
         if (response.ok) {
             const conversations = await response.json();
             renderConversations(conversations);
+            return conversations;
         }
     } catch (error) {
         console.error('Failed to load conversations:', error);
     }
+    return [];
 }
 
 function renderConversations(conversations) {
@@ -500,6 +594,7 @@ async function loadConversation(conversationId) {
         // Render messages
         messagesContainer.innerHTML = '';
         conversation.messages.forEach(msg => addMessage(msg.content, msg.role));
+        activeConversationSignature = buildConversationSignature(conversation.messages);
         
         // Highlight active in sidebar
         updateActiveSidebarItem(conversationId);
@@ -514,6 +609,7 @@ function startNewChat() {
     currentConversationId = null;
     localStorage.removeItem('activeConversationId');
     messagesContainer.innerHTML = '';
+    activeConversationSignature = null;
     hideSuggestions();
     updateActiveSidebarItem(null);
     messageInput.focus();
@@ -617,6 +713,8 @@ function handleLogout() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('activeConversationId');
     messagesContainer.innerHTML = '';
+    activeConversationSignature = null;
+    stopLiveSync();
     showAuth();
 }
 
@@ -697,6 +795,15 @@ async function retrySend() {
 // Core API call — shared by sendMessage and retrySend
 async function dispatchToLLM(payload, loadingId) {
     const { message, capturedImage, conversationId } = payload;
+    isRequestInFlight = true;
+    clearTimeout(longWaitTimer);
+    longWaitTimer = setTimeout(() => {
+        updateMessageText(
+            loadingId,
+            'Still working on it... this can take a while on local LLMs. Your conversation will stay in this same chat thread.'
+        );
+    }, 12000);
+
     try {
         const response = await apiFetch(`${API_URL}/chat/send`, {
             method: 'POST',
@@ -711,30 +818,67 @@ async function dispatchToLLM(payload, loadingId) {
             })
         });
 
-        const data = await response.json();
+        let data = null;
+        const contentType = (response.headers.get('content-type') || '').toLowerCase();
+        if (contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const raw = await response.text();
+            data = { detail: raw || `HTTP ${response.status}` };
+        }
 
         if (response.ok) {
             removeMessage(loadingId);
             addMessage(data.message, 'assistant');
 
-            const wasNewConversation = currentConversationId === null;
             currentConversationId = data.conversation_id;
             localStorage.setItem('activeConversationId', data.conversation_id);
-            if (wasNewConversation) {
-                await loadConversations();
-            }
+            activeConversationSignature = null;
+            await loadConversations();
             updateActiveSidebarItem(currentConversationId);
 
             // Fetch smart suggestions (fire-and-forget; never blocks chat)
             fetchSuggestions(data.conversation_id);
         } else {
             removeMessage(loadingId);
-            showErrorBubble(data.detail || 'Failed to get a response.');
+            const detailValue = data?.detail;
+            let detailText = 'Failed to get a response.';
+            let erroredConversationId = null;
+
+            if (typeof detailValue === 'string') {
+                detailText = detailValue;
+            } else if (detailValue && typeof detailValue === 'object') {
+                detailText = detailValue.message || detailText;
+                erroredConversationId = parseInt(detailValue.conversation_id) || null;
+            }
+
+            if (erroredConversationId) {
+                currentConversationId = erroredConversationId;
+                localStorage.setItem('activeConversationId', erroredConversationId);
+                updateActiveSidebarItem(currentConversationId);
+                await loadConversations();
+            }
+
+            if (response.status === 504) {
+                detailText = 'The server timed out waiting for the model. Your message may still be processing. Please stay in this chat and retry shortly.';
+            }
+
+            showErrorBubble(detailText);
         }
     } catch (error) {
         removeMessage(loadingId);
         showErrorBubble('Network error — could not reach the server.');
+    } finally {
+        clearTimeout(longWaitTimer);
+        longWaitTimer = null;
+        isRequestInFlight = false;
     }
+}
+
+function updateMessageText(id, text) {
+    const message = messagesContainer.querySelector(`[data-id="${id}"]`);
+    if (!message) return;
+    message.textContent = text;
 }
 
 function showErrorBubble(detail) {
@@ -750,6 +894,59 @@ function showErrorBubble(detail) {
     `;
     messagesContainer.appendChild(div);
     div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function buildConversationSignature(messages) {
+    if (!Array.isArray(messages) || messages.length === 0) return 'empty';
+    const last = messages[messages.length - 1] || {};
+    const tail = String(last.content || '').slice(-120);
+    return `${messages.length}:${last.role || ''}:${tail}`;
+}
+
+async function syncActiveConversation() {
+    if (!authToken || !currentConversationId || isRequestInFlight || isSyncingConversation) return;
+
+    isSyncingConversation = true;
+    try {
+        const response = await apiFetch(`${API_URL}/chat/conversations/${currentConversationId}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!response.ok) return;
+
+        const conversation = await response.json();
+        const nextSignature = buildConversationSignature(conversation.messages);
+        if (nextSignature === activeConversationSignature) return;
+
+        const nearBottom = (messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight) < 80;
+        messagesContainer.innerHTML = '';
+        conversation.messages.forEach(msg => addMessage(msg.content, msg.role));
+        activeConversationSignature = nextSignature;
+        if (nearBottom) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        updateActiveSidebarItem(currentConversationId);
+    } catch (error) {
+        console.error('Live sync failed:', error);
+    } finally {
+        isSyncingConversation = false;
+    }
+}
+
+function startLiveSync() {
+    stopLiveSync();
+    liveSyncTimer = setInterval(async () => {
+        if (!authToken || document.getElementById('chat-container').classList.contains('hidden')) return;
+
+        const sidebarSearch = document.getElementById('sidebar-search');
+        const searchActive = sidebarSearch && sidebarSearch.value.trim().length >= 2;
+        if (!searchActive) await loadConversations();
+        await syncActiveConversation();
+    }, 6000);
+}
+
+function stopLiveSync() {
+    if (liveSyncTimer) {
+        clearInterval(liveSyncTimer);
+        liveSyncTimer = null;
+    }
 }
 
 // ──────────────────────────────────────────────
@@ -1038,11 +1235,13 @@ function removeMessage(id) {
 function showAuth() {
     authContainer.classList.remove('hidden');
     chatContainer.classList.add('hidden');
+    stopLiveSync();
 }
 
 function showChat() {
     authContainer.classList.add('hidden');
     chatContainer.classList.remove('hidden');
+    startLiveSync();
 }
 
 function showError(message, isError = true) {

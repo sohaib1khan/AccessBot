@@ -2,8 +2,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.sql import func
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime, timedelta, timezone
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.models.user import User
@@ -51,6 +53,11 @@ async def send_message(
     db: Session = Depends(get_db)
 ):
     """Send a chat message and get AI response"""
+
+    def _touch_conversation(conv: Conversation):
+        conv.updated_at = func.now()
+        db.add(conv)
+        db.commit()
     
     # Get or create conversation
     if request.conversation_id:
@@ -65,14 +72,37 @@ async def send_message(
                 detail="Conversation not found"
             )
     else:
-        # Create new conversation
-        conversation = Conversation(
-            user_id=current_user.id,
-            title=request.message[:50] if len(request.message) > 50 else request.message
+        # Try to continue the most recent incomplete conversation first.
+        # This prevents duplicate sessions when a prior request timed out.
+        conversation = (
+            db.query(Conversation)
+            .filter(Conversation.user_id == current_user.id)
+            .order_by(Conversation.updated_at.desc())
+            .first()
         )
-        db.add(conversation)
-        db.commit()
-        db.refresh(conversation)
+
+        should_reuse = False
+        if conversation:
+            last_message = (
+                db.query(Message)
+                .filter(Message.conversation_id == conversation.id)
+                .order_by(Message.created_at.desc())
+                .first()
+            )
+            if last_message and last_message.role == "user" and conversation.updated_at:
+                conv_updated = conversation.updated_at
+                if conv_updated.tzinfo is None:
+                    conv_updated = conv_updated.replace(tzinfo=timezone.utc)
+                should_reuse = (datetime.now(timezone.utc) - conv_updated) <= timedelta(minutes=20)
+
+        if not should_reuse:
+            conversation = Conversation(
+                user_id=current_user.id,
+                title=request.message[:50] if len(request.message) > 50 else request.message
+            )
+            db.add(conversation)
+            db.commit()
+            db.refresh(conversation)
     
     # Save user message — store as JSON if an image is attached
     import json as _json
@@ -88,6 +118,7 @@ async def send_message(
     )
     db.add(user_message)
     db.commit()
+    _touch_conversation(conversation)
     
     # Get conversation history
     messages = db.query(Message).filter(
@@ -125,9 +156,37 @@ async def send_message(
     try:
         ai_response = await ai_router.chat(current_user.id, ai_messages, db)
     except Exception as e:
+        error_text = str(e)
+        lowered = error_text.lower()
+        timeout_like = any(t in lowered for t in ["timeout", "timed out", "too long to respond"])
+
+        if timeout_like:
+            fallback_message = (
+                "I’m still working on your request, and this model is taking longer than usual to respond. "
+                "Your message was saved to this same conversation, so please keep using this chat thread. "
+                "If this keeps happening, try reducing response length (max tokens), choosing a smaller/faster model, "
+                "or increasing your reverse-proxy timeout."
+            )
+            assistant_message = Message(
+                conversation_id=conversation.id,
+                role="assistant",
+                content=fallback_message
+            )
+            db.add(assistant_message)
+            db.commit()
+            _touch_conversation(conversation)
+            return {
+                "conversation_id": conversation.id,
+                "message": fallback_message,
+                "role": "assistant"
+            }
+
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"AI service error: {str(e)}"
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={
+                "message": f"AI service error: {error_text}",
+                "conversation_id": conversation.id
+            }
         )
     
     # Save AI response
@@ -138,6 +197,7 @@ async def send_message(
     )
     db.add(assistant_message)
     db.commit()
+    _touch_conversation(conversation)
     
     return {
         "conversation_id": conversation.id,
