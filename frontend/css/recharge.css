@@ -141,6 +141,29 @@
     text-decoration: underline;
 }
 
+/* Edit/Remove controls on custom items in the feed grid */
+.recharge-item-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.feed-del-btn {
+    border-color: rgba(224,108,117,.5);
+    color: #e06c75;
+}
+
+.feed-del-btn:hover,
+.feed-del-btn:focus-visible {
+    background: rgba(224,108,117,.12);
+}
+
+/* Subtle left border to distinguish custom items in the feed */
+.recharge-item-custom {
+    border-left: 3px solid var(--accent-dim);
+}
+
 .recharge-empty {
     margin: 12px 0;
     color: var(--text-muted);
@@ -150,76 +173,40 @@
 .custom-item-form {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-bottom: 16px;
-    padding: 12px;
-    border: 1px solid var(--border);
+    gap: 14px;
+    margin-bottom: 20px;
+    padding: 20px;
+    border: 1px solid var(--border-bright);
     border-radius: var(--radius-md);
     background: var(--bg-base);
 }
 
-.custom-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+/* Zero out the default bottom margin on .form-row inside our form so gap controls spacing */
+.custom-item-form .form-row {
+    margin-bottom: 0;
 }
 
-.custom-field {
+/* Two-column row for Type + Source */
+.recharge-form-pair {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    gap: 14px;
+}
+
+.recharge-form-pair .form-row {
+    flex: 1;
     min-width: 0;
 }
 
-.custom-field-wide {
-    grid-column: 1 / -1;
-}
-
-.custom-field label {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-#recharge-container .custom-field input,
-#recharge-container .custom-field select,
-#recharge-container .custom-field textarea {
-    width: 100%;
-    background: var(--bg-raised);
-    color: var(--text-primary);
-    border: 2px solid var(--border-bright);
-    border-radius: 8px;
-    padding: 11px 12px;
-    font-family: var(--font-base);
-    font-size: 0.9rem;
-    box-sizing: border-box;
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-#recharge-container .custom-field input::placeholder,
-#recharge-container .custom-field textarea::placeholder {
+.form-optional {
+    font-weight: 400;
+    font-size: 0.82rem;
     color: var(--text-muted);
 }
 
-#recharge-container .custom-field input:focus,
-#recharge-container .custom-field select:focus,
-#recharge-container .custom-field textarea:focus {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-    border-color: var(--accent-dim);
-}
-
-#recharge-container .custom-field select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2300c4a7' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 34px;
-}
-
-#recharge-container .custom-field textarea {
-    resize: vertical;
-    min-height: 96px;
+@media (max-width: 600px) {
+    .recharge-form-pair {
+        flex-direction: column;
+    }
 }
 
 .custom-actions {

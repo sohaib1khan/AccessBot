@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.getElementById('refresh-quote-btn')?.addEventListener('click', async () => {
-        await loadFeed(true);
+        await loadQuote();
     });
 
     document.getElementById('custom-item-form')?.addEventListener('submit', submitCustomItem);
@@ -49,6 +49,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await Promise.all([loadFeed(false), loadCustomItems()]);
 });
+
+async function loadQuote() {
+    const btn = document.getElementById('refresh-quote-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Loading…'; }
+    try {
+        const res = await apiFetch(`${API_URL}/plugins/recharge/quote`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+            renderQuote(data.quote, data.updated_at);
+        }
+    } catch (e) {
+        // silently ignore — existing quote stays visible
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 Refresh quote'; }
+    }
+}
 
 async function loadFeed(refreshOnlyQuote) {
     try {
@@ -120,7 +138,7 @@ function renderFeed() {
 
     empty.classList.add('hidden');
     grid.innerHTML = filtered.map(item => `
-        <article class="recharge-item" role="listitem">
+        <article class="recharge-item${item.isCustom ? ' recharge-item-custom' : ''}" role="listitem" ${item.isCustom ? `data-id="${escapeAttr(item.id)}"` : ''}>
             <div class="recharge-item-head">
                 <span class="recharge-type">${escapeHtml(item.type)}</span>
                 <span class="recharge-source">${escapeHtml(item.source || '')}${item.isCustom ? ' • You' : ''}</span>
@@ -128,8 +146,23 @@ function renderFeed() {
             <h3 class="recharge-title">${escapeHtml(item.title || '')}</h3>
             <p class="recharge-summary">${escapeHtml(item.summary || '')}</p>
             <a class="recharge-link" href="${escapeAttr(item.url || '#')}" target="_blank" rel="noopener">Open resource →</a>
+            ${item.isCustom ? `
+            <div class="recharge-item-actions">
+                <button class="btn btn-secondary btn-sm feed-edit-btn" data-id="${escapeAttr(item.id)}">Edit</button>
+                <button class="btn btn-secondary btn-sm feed-del-btn" data-id="${escapeAttr(item.id)}">Remove</button>
+            </div>` : ''}
         </article>
     `).join('');
+
+    grid.querySelectorAll('.feed-edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            startEditCustomItem(btn.dataset.id);
+            document.getElementById('custom-item-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+    grid.querySelectorAll('.feed-del-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteCustomItem(btn.dataset.id));
+    });
 }
 
 async function loadCustomItems() {

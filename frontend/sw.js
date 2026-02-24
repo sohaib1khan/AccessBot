@@ -1,5 +1,5 @@
 /* AccessBot Service Worker — network-first for app shell/js/css; cache-first for others */
-const CACHE = 'accessbot-v2';
+const CACHE = 'accessbot-v4';
 const STATIC = [
     '/',
     '/index.html',

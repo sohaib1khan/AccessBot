@@ -333,7 +333,16 @@
     }
 
     // ── Wire events ─────────────────────────────────────────────────────────
+    let initialized = false;
+
     function init() {
+        if (initialized) return;
+
+        // On index.html: skip when the chat container is still hidden (login screen)
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer && chatContainer.classList.contains('hidden')) return;
+
+        initialized = true;
         const { trigger, panel } = buildWidget();
         const messagesEl = panel.querySelector('#hb-messages');
         const chipsEl    = panel.querySelector('#hb-chips');
@@ -374,5 +383,8 @@
     } else {
         init();
     }
+
+    // Also init after login (app.js dispatches this when chat becomes visible)
+    document.addEventListener('accessbot:login', init);
 
 })();

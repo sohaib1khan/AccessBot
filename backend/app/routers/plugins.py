@@ -407,6 +407,21 @@ async def mood_history(
     return {"entries": entries, "summary": summary}
 
 
+@router.get("/recharge/quote")
+async def recharge_quote(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get a fresh motivational quote."""
+    from datetime import datetime, timezone
+
+    if not plugin_manager.is_enabled("recharge", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Recharge plugin is disabled")
+
+    quote = await recharge_plugin.quote()
+    return {"quote": quote, "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
 @router.get("/recharge/feed", response_model=RechargeFeedResponse)
 async def recharge_feed(
     current_user: User = Depends(get_current_user),

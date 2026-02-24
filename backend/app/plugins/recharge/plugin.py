@@ -100,8 +100,12 @@ class RechargePlugin(BasePlugin):
                 data = response.json()
                 if isinstance(data, list) and data:
                     q = data[0]
+                    text = q.get("q") or ""
+                    # zenquotes returns this string when rate-limited
+                    if "too many requests" in text.lower() or not text:
+                        return fallback
                     return {
-                        "text": q.get("q") or fallback["text"],
+                        "text": text,
                         "author": q.get("a") or "Unknown",
                         "source": "zenquotes",
                     }

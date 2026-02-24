@@ -1238,6 +1238,8 @@ function showChat() {
     authContainer.classList.add('hidden');
     chatContainer.classList.remove('hidden');
     startLiveSync();
+    // Let helpbot know the app is ready (needed when user logs in from login screen)
+    document.dispatchEvent(new Event('accessbot:login'));
 }
 
 function showError(message, isError = true) {
