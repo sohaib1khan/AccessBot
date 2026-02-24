@@ -32,6 +32,12 @@
             emoji: '🗂️',
             desc: 'Coping strategies, tips, and accessibility resources.',
         },
+        recharge: {
+            url: '/recharge.html',
+            label: 'Motivation & Recharge',
+            emoji: '⚡',
+            desc: 'Motivational articles, videos, audio picks, and quote feed.',
+        },
         settings: {
             url: '/settings.html',
             label: 'Settings',
@@ -64,6 +70,11 @@
             page: 'resources',
             patterns: ['resource', 'resources', 'tip', 'tips', 'strategy', 'strategies', 'coping', 'breathing', 'exercise', 'help material', 'article', 'guide', 'support material', 'relaxation', 'mindfulness'],
             reply: 'The **Resources** page has coping strategies, breathing exercises, and tips to support your wellbeing.',
+        },
+        {
+            page: 'recharge',
+            patterns: ['recharge', 'motivation', 'motivational', 'inspiration', 'inspire', 'quote', 'quotes', 'video', 'videos', 'watch', 'listen', 'audio', 'podcast'],
+            reply: 'The **Motivation & Recharge** page gives you quick uplifting content: articles to read, videos to watch, audio picks to listen to, and a live quote feed.',
         },
         {
             page: 'settings',
@@ -110,6 +121,7 @@
     const QUICK_CHIPS = [
         { label: '📋 Check in', query: 'where do I log my mood' },
         { label: '📊 View stats', query: 'show me my insights' },
+        { label: '⚡ Recharge', query: 'open recharge page' },
         { label: '🗂️ Resources', query: 'show resources' },
         { label: '⚙️ Settings', query: 'open settings' },
     ];

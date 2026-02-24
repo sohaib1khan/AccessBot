@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#060e1c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>Recharge - AccessBot</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/accessibility.css">
+    <link rel="stylesheet" href="css/helpbot.css">
+    <link rel="stylesheet" href="css/recharge.css">
+</head>
+<body>
+    <div id="a11y-announcement" aria-live="assertive" aria-atomic="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
+
+    <div class="settings-container" id="recharge-container">
+        <div class="settings-header">
+            <h1>⚡ Motivation & Recharge</h1>
+            <div class="header-actions" style="display:flex;gap:10px;flex-wrap:wrap;">
+                <a href="/" class="btn btn-secondary">← Chat</a>
+                <a href="/resources.html" class="btn btn-secondary">🗂️ Resources</a>
+                <a href="/settings.html" class="btn btn-secondary">Settings</a>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+
+        <div class="settings-card quote-card">
+            <div class="settings-card-header">
+                <span class="section-icon" aria-hidden="true">💬</span>
+                <h2>Quote Feed</h2>
+            </div>
+            <blockquote id="quote-text" class="quote-text">Loading quote…</blockquote>
+            <p id="quote-author" class="quote-author"></p>
+            <div class="quote-actions">
+                <button id="refresh-quote-btn" class="btn btn-secondary btn-sm">🔄 Refresh quote</button>
+                <span id="quote-updated" class="quote-updated" aria-live="polite"></span>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <span class="section-icon" aria-hidden="true">🎯</span>
+                <h2>Explore Feed</h2>
+            </div>
+
+            <div class="recharge-toolbar">
+                <input id="recharge-search" type="search" placeholder="Search articles, videos, audio…" aria-label="Search recharge feed">
+                <div class="recharge-filters" role="group" aria-label="Feed filters">
+                    <button class="rf-btn active" data-type="all">All</button>
+                    <button class="rf-btn" data-type="article">Articles</button>
+                    <button class="rf-btn" data-type="video">Videos</button>
+                    <button class="rf-btn" data-type="audio">Listen</button>
+                </div>
+            </div>
+
+            <div id="recharge-empty" class="recharge-empty hidden">No items matched your search/filter.</div>
+            <div id="recharge-grid" class="recharge-grid" role="list" aria-label="Recharge feed items"></div>
+        </div>
+    </div>
+
+    <script src="js/recharge.js"></script>
+    <script src="js/helpbot.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+      }
+    </script>
+</body>
+</html>

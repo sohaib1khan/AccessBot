@@ -212,6 +212,9 @@ function setupHelpChatbot() {
     const customInput = document.getElementById('help-chat-input');
     const customSend = document.getElementById('help-chat-send');
     if (!toggle || !panel) return;
+    if (toggle.dataset.boundHelp === '1') return;
+    toggle.dataset.boundHelp = '1';
+    toggle.type = 'button';
 
     const openPanel = () => {
         panel.hidden = false;
@@ -223,7 +226,9 @@ function setupHelpChatbot() {
         toggle.setAttribute('aria-expanded', 'false');
     };
 
-    toggle.addEventListener('click', () => {
+    toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (panel.hidden) {
             openPanel();
         } else {
@@ -231,7 +236,23 @@ function setupHelpChatbot() {
         }
     });
 
-    if (closeBtn) closeBtn.addEventListener('click', closePanel);
+    toggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggle.click();
+        }
+    });
+
+    if (closeBtn) {
+        closeBtn.type = 'button';
+        closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closePanel();
+        });
+    }
+
+    panel.addEventListener('click', (e) => e.stopPropagation());
 
     promptButtons.forEach(btn => {
         btn.addEventListener('click', async () => {

@@ -19,9 +19,11 @@ from app.models import plugin as plugin_model                            # noqa:
 from app.plugins.manager import plugin_manager
 from app.plugins.daily_checkin.plugin import daily_checkin_plugin
 from app.plugins.mood_tracker.plugin import mood_tracker_plugin
+from app.plugins.recharge.plugin import recharge_plugin
 
 plugin_manager.register(daily_checkin_plugin)
 plugin_manager.register(mood_tracker_plugin)
+plugin_manager.register(recharge_plugin)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

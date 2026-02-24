@@ -1,5 +1,5 @@
-/* AccessBot Service Worker — cache-first for static assets */
-const CACHE = 'accessbot-v1';
+/* AccessBot Service Worker — network-first for app shell/js/css; cache-first for others */
+const CACHE = 'accessbot-v2';
 const STATIC = [
     '/',
     '/index.html',
@@ -37,6 +37,29 @@ self.addEventListener('fetch', e => {
     // Only handle GET; skip API requests
     if (e.request.method !== 'GET') return;
     if (e.request.url.includes('/api/')) return;
+
+    const reqUrl = new URL(e.request.url);
+    const path = reqUrl.pathname;
+    const criticalAsset =
+        e.request.mode === 'navigate' ||
+        path.endsWith('.html') ||
+        path.endsWith('.js') ||
+        path.endsWith('.css');
+
+    if (criticalAsset) {
+        e.respondWith(
+            fetch(e.request)
+                .then(res => {
+                    if (res && res.status === 200 && e.request.url.startsWith(self.location.origin)) {
+                        const clone = res.clone();
+                        caches.open(CACHE).then(c => c.put(e.request, clone));
+                    }
+                    return res;
+                })
+                .catch(() => caches.match(e.request))
+        );
+        return;
+    }
 
     e.respondWith(
         caches.match(e.request).then(cached => {

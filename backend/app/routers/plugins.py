@@ -10,6 +10,7 @@ from app.models.user import User
 from app.plugins.manager import plugin_manager
 from app.plugins.daily_checkin.plugin import daily_checkin_plugin
 from app.plugins.mood_tracker.plugin import mood_tracker_plugin
+from app.plugins.recharge.plugin import recharge_plugin
 
 router = APIRouter()
 
@@ -58,6 +59,14 @@ class MoodEntry(BaseModel):
 class MoodHistoryResponse(BaseModel):
     entries: List[MoodEntry]
     summary: dict
+
+
+class RechargeFeedResponse(BaseModel):
+    articles: list[dict]
+    videos: list[dict]
+    audio: list[dict]
+    quote: dict
+    updated_at: str
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
@@ -315,3 +324,24 @@ async def mood_history(
     summary = mood_tracker_plugin.mood_summary(current_user.id, db)
 
     return {"entries": entries, "summary": summary}
+
+
+@router.get("/recharge/feed", response_model=RechargeFeedResponse)
+async def recharge_feed(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get curated motivation/recharge content feed."""
+    from datetime import datetime, timezone
+
+    if not plugin_manager.is_enabled("recharge", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Recharge plugin is disabled")
+
+    quote = await recharge_plugin.quote()
+    return {
+        "articles": recharge_plugin.articles(),
+        "videos": recharge_plugin.videos(),
+        "audio": recharge_plugin.audio(),
+        "quote": quote,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
