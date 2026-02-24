@@ -674,6 +674,32 @@ body {
     color: var(--text-primary);
 }
 
+.message.assistant em {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Markdown tables rendered as scrollable preformatted blocks */
+.message.assistant pre.md-table {
+    overflow-x: auto;
+    background: rgba(0,0,0,0.22);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.83em;
+    font-family: 'Menlo', 'Consolas', monospace;
+    white-space: pre;
+    margin: 6px 0;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.message.assistant .md-heading {
+    display: block;
+    font-size: 1.05em;
+    margin: 4px 0 2px;
+}
+
 /* Mic */
 .btn-mic {
     background: var(--bg-raised); border: 2px solid var(--border-bright);

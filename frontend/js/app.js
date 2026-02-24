@@ -1198,27 +1198,58 @@ function addMessage(text, role) {
 }
 
 function formatAssistantMessage(text) {
-    let safe = escapeHtml(String(text ?? ''));
+    let raw = String(text ?? '');
 
-    safe = safe.replace(/\r\n/g, '\n');
+    // Normalize line endings
+    raw = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-    // Add readability for numbered/bulleted points that often arrive in one run-on line.
-    safe = safe.replace(/\s(\d+\.\s)/g, '<br>$1');
-    safe = safe.replace(/\s([•-]\s)/g, '<br>$1');
+    // Convert literal <br> / <br/> the AI might emit → real newlines (before escaping)
+    raw = raw.replace(/<br\s*\/?>/gi, '\n');
 
-    // Basic markdown-like formatting
-    safe = safe.replace(/^#{1,6}\s+(.+)$/gm, '<strong>$1</strong>');
-    safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    safe = safe.replace(/`([^`]+)`/g, '<code>$1</code>');
+    // --- Detect markdown tables (lines that are mostly | pipe chars) ---
+    // Replace them with a <pre> block so they render cleanly
+    raw = raw.replace(
+        /((?:^[ \t]*\|.+\|[ \t]*\n?)+)/gm,
+        (match) => `\x00TABLE\x00${match}\x00ENDTABLE\x00`
+    );
+
+    // Now safe-escape everything
+    let safe = escapeHtml(raw);
+
+    // Restore pre-formatted table blocks (escapeHtml encoded the markers too, so re-encode markers)
+    // Actually escapeHtml won't touch \x00, so we can replace directly
+    safe = safe.replace(/\x00TABLE\x00([\s\S]*?)\x00ENDTABLE\x00/g, (_, tableText) => {
+        return `<pre class="md-table">${tableText.trim()}</pre>`;
+    });
+
+    // Headings (##, ###, etc.) — full line
+    safe = safe.replace(/^#{1,6}\s+(.+)$/gm, '<strong class="md-heading">$1</strong>');
+
+    // Bold: **text**
+    safe = safe.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
+
+    // Italic: *text* (single, not double)
+    safe = safe.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, '<em>$1</em>');
+
+    // Inline code: `code`
+    safe = safe.replace(/`([^`\n]+)`/g, '<code>$1</code>');
 
     // Markdown links: [label](https://...)
     safe = safe.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 
-    // Preserve line breaks from model output
+    // Ensure numbered list items start on their own line
+    safe = safe.replace(/(\n)(\d+\.\s)/g, '\n$2');
+    safe = safe.replace(/([^\n])(\d+\.\s)/g, '$1\n$2');
+
+    // Ensure bullet items start on their own line
+    safe = safe.replace(/([^\n])([•\-]\s)/g, '$1\n$2');
+
+    // Convert remaining newlines to <br>
     safe = safe.replace(/\n/g, '<br>');
 
-    // Collapse excessive blank lines
+    // Collapse 3+ consecutive <br> to 2
     safe = safe.replace(/(<br>){3,}/g, '<br><br>');
+
     return safe;
 }
 
@@ -1232,12 +1263,20 @@ function showAuth() {
     authContainer.classList.remove('hidden');
     chatContainer.classList.add('hidden');
     stopLiveSync();
+    // Hide HelpBot if it was already built (e.g. stale token → 401 → back to login)
+    const hbt = document.getElementById('helpbot-trigger');
+    const hbp = document.getElementById('helpbot-panel');
+    if (hbt) hbt.style.display = 'none';
+    if (hbp) hbp.hidden = true;
 }
 
 function showChat() {
     authContainer.classList.add('hidden');
     chatContainer.classList.remove('hidden');
     startLiveSync();
+    // Restore HelpBot visibility (in case it was hidden by showAuth)
+    const hbt = document.getElementById('helpbot-trigger');
+    if (hbt) hbt.style.display = '';
     // Let helpbot know the app is ready (needed when user logs in from login screen)
     document.dispatchEvent(new Event('accessbot:login'));
 }
