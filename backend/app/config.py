@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     
     # Application
     DEBUG: bool = True
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8009"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
     
     class Config:
         env_file = ".env"

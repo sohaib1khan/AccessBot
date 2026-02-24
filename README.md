@@ -51,7 +51,7 @@ graph TB
 
     subgraph Docker Network
         NGINX[nginx :3000\nreverse proxy + static files]
-        API[FastAPI backend :8009\nPython]
+        API[FastAPI backend :8000\nPython]
         DB[(PostgreSQL :5432)]
     end
 
@@ -92,7 +92,7 @@ sequenceDiagram
     participant DB as PostgreSQL
 
     B->>N: POST /api/chat/send
-    N->>F: proxy to :8009
+    N->>F: proxy to :8000
     F->>DB: load or create Conversation
     F->>DB: save user Message
     F->>P: collect_ai_context(user_id)
@@ -252,7 +252,7 @@ A 70B local model has up to 5 minutes to finish generating before timing out.
 ```
 AccessBot/
 |-- docker-compose.yml          Starts all three containers
-|-- nginx.conf                  Reverse proxy: /api/* -> backend :8009
+|-- nginx.conf                  Reverse proxy: /api/* -> backend :8000
 |-- .env.example                Copy to .env and fill in real values
 |
 |-- backend/
