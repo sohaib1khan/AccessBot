@@ -136,7 +136,7 @@ async def test_connection(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        raise HTTPException(status_code=503, detail=str(e))
 
 # LLM provider templates for easy configuration
 @router.get("/templates")
