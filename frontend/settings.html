@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#060e1c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AccessBot">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>Settings - AccessBot</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/accessibility.css">
+    <link rel="stylesheet" href="css/helpbot.css">
+</head>
+<body>
+    <div id="a11y-announcement" aria-live="assertive" aria-atomic="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
+    <div id="settings-container" class="container">
+        <div class="settings-card">
+            <div class="settings-header">
+                <h1>LLM Settings</h1>
+                <div class="header-actions">
+                    <a href="/" class="btn btn-secondary">Back to Chat</a>
+                    <a href="/insights.html" class="btn btn-secondary">📊 Insights</a>
+                    <a href="/checkin.html" class="btn btn-secondary">📋 Check-in</a>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+            
+            <div class="settings-content">
+
+                <!-- ── Account ─────────────────────────────────── -->
+                <div class="section">
+                    <h2>👤 My Account</h2>
+                    <p>Update your username, email, or password.</p>
+
+                    <div class="form-group">
+                        <label for="acct-username">Username</label>
+                        <input type="text" id="acct-username" placeholder="New username" autocomplete="username" minlength="3" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label for="acct-email">Email (optional)</label>
+                        <input type="email" id="acct-email" placeholder="your@email.com" autocomplete="email">
+                    </div>
+
+                    <hr class="section-divider" style="margin: 16px 0">
+
+                    <p style="font-size:0.9rem;color:var(--text-secondary)">Leave the password fields blank if you only want to update your username / email.</p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="acct-current-pw">Current Password</label>
+                            <input type="password" id="acct-current-pw" placeholder="Required to change password" autocomplete="current-password">
+                        </div>
+                        <div class="form-group">
+                            <label for="acct-new-pw">New Password</label>
+                            <input type="password" id="acct-new-pw" placeholder="Min 6 characters" autocomplete="new-password" minlength="6">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="save-account-btn" class="btn btn-primary">Save Account</button>
+                    </div>
+                    <div id="account-message" class="message hidden"></div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- ── User Management ────────────────────────── -->
+                <div class="section">
+                    <h2>🔑 User Management</h2>
+                    <p>Create or remove user accounts. All users have full access.</p>
+
+                    <div id="users-list-wrap" style="margin-bottom:20px">
+                        <p class="loading-text">Loading users…</p>
+                    </div>
+
+                    <details id="add-user-details">
+                        <summary style="cursor:pointer;font-weight:600;color:var(--accent);margin-bottom:12px">＋ Add new user</summary>
+                        <div class="form-group" style="margin-top:12px">
+                            <label for="newuser-username">Username</label>
+                            <input type="text" id="newuser-username" placeholder="Username" minlength="3" maxlength="50">
+                        </div>
+                        <div class="form-group">
+                            <label for="newuser-email">Email (optional)</label>
+                            <input type="email" id="newuser-email" placeholder="user@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="newuser-password">Password</label>
+                            <input type="password" id="newuser-password" placeholder="Min 6 characters" minlength="6">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" id="create-user-btn" class="btn btn-primary">Create User</button>
+                        </div>
+                        <div id="newuser-message" class="message hidden"></div>
+                    </details>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Plugins Section -->
+                <div class="section">
+                    <h2>🧩 Plugins</h2>
+                    <p>Enable or disable features for your account.</p>
+                    <div id="plugins-container" class="plugins-list">
+                        <p class="loading-text">Loading plugins...</p>
+                    </div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Voice Section -->
+                <div class="section">
+                    <h2>🎙️ Voice</h2>
+                    <p>Speech-to-text (Whisper) and text-to-speech (OpenAI TTS). Requires an OpenAI API key.</p>
+
+                    <div class="form-group">
+                        <label for="voice_api_key">OpenAI API Key for Voice</label>
+                        <input type="password" id="voice_api_key" placeholder="sk-... (leave blank to keep existing)">
+                        <small id="voice-key-status">No voice key set yet</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tts_voice">TTS Voice</label>
+                            <select id="tts_voice">
+                                <option value="nova">Nova — warm &amp; friendly</option>
+                                <option value="alloy">Alloy — neutral</option>
+                                <option value="echo">Echo — deep</option>
+                                <option value="fable">Fable — expressive</option>
+                                <option value="onyx">Onyx — authoritative</option>
+                                <option value="shimmer">Shimmer — soft</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Auto-Speak Replies</label>
+                            <label class="toggle-switch" style="margin-top:10px" aria-label="Auto-speak AI replies">
+                                <input type="checkbox" id="voice_enabled">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <small>Automatically read AI responses aloud</small>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="save-voice-btn" class="btn btn-primary">Save Voice Settings</button>
+                    </div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Accessibility Section -->
+                <div class="section">
+                    <h2>♿ Accessibility</h2>
+                    <p>Customize the interface for your needs. Settings are saved to your browser.</p>
+
+                    <!-- Colour theme -->
+                    <div class="plugin-row" style="flex-wrap:wrap; gap:12px">
+                        <div class="plugin-info">
+                            <strong>Colour theme</strong>
+                            <span>Choose a colour scheme suited to your vision needs</span>
+                        </div>
+                        <div class="a11y-themes" role="radiogroup" aria-label="Colour theme" style="margin-top:4px">
+                            <button class="theme-btn" data-theme="default" role="radio" aria-checked="true" title="Aurora dark">
+                                <span class="theme-swatch swatch-default"></span><span>Default</span>
+                            </button>
+                            <button class="theme-btn" data-theme="hc-light" role="radio" aria-checked="false" title="High contrast light">
+                                <span class="theme-swatch swatch-hc-light"></span><span>HC Light</span>
+                            </button>
+                            <button class="theme-btn" data-theme="yellow-black" role="radio" aria-checked="false" title="Yellow on black">
+                                <span class="theme-swatch swatch-yellow-black"></span><span>Yellow/Black</span>
+                            </button>
+                            <button class="theme-btn" data-theme="soft-warm" role="radio" aria-checked="false" title="Soft warm">
+                                <span class="theme-swatch swatch-soft-warm"></span><span>Soft Warm</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Font size slider -->
+                    <div class="plugin-row">
+                        <div class="plugin-info">
+                            <strong>Text size</strong>
+                            <span>Scale all text (100% – 200%). Affects all rem-based sizes.</span>
+                        </div>
+                        <div class="a11y-slider-wrap" style="width:160px">
+                            <input type="range" id="a11y-font-zoom" min="100" max="200" step="25" value="100"
+                                   aria-label="Text size" aria-valuetext="100%" style="flex:1">
+                            <output id="a11y-font-zoom-val" aria-live="polite">100%</output>
+                        </div>
+                    </div>
+
+                    <!-- Line spacing -->
+                    <div class="plugin-row">
+                        <div class="plugin-info">
+                            <strong>Line spacing</strong>
+                            <span>Wider line spacing for easier reading of long text</span>
+                        </div>
+                        <div class="a11y-steppers" role="radiogroup" aria-label="Line spacing">
+                            <button class="step-btn active" data-spacing="normal" role="radio" aria-checked="true">Normal</button>
+                            <button class="step-btn" data-spacing="wide" role="radio" aria-checked="false">Wide</button>
+                            <button class="step-btn" data-spacing="wider" role="radio" aria-checked="false">Wider</button>
+                        </div>
+                    </div>
+
+                    <!-- Letter spacing -->
+                    <div class="plugin-row">
+                        <div class="plugin-info">
+                            <strong>Letter spacing</strong>
+                            <span>Expanded letter &amp; word spacing for readability</span>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle wide letter spacing">
+                            <input type="checkbox" id="a11y-letter-spacing" onchange="window.a11y && window.a11y.set('letterSpacing', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Enhanced focus ring -->
+                    <div class="plugin-row">
+                        <div class="plugin-info">
+                            <strong>Bold focus ring</strong>
+                            <span>Thick 5 px focus indicator for keyboard and low-vision users</span>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle bold focus ring">
+                            <input type="checkbox" id="a11y-enhanced-focus" onchange="window.a11y && window.a11y.set('enhancedFocus', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Large targets -->
+                    <div class="plugin-row">
+                        <div class="plugin-info">
+                            <strong>Large touch targets</strong>
+                            <span>Bigger buttons, inputs and list items for easier interaction</span>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle large touch targets">
+                            <input type="checkbox" id="a11y-large-targets" onchange="window.a11y && window.a11y.set('largeTargets', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- High contrast dark (legacy) -->
+                    <div class="plugin-row">
+                        <div class="plugin-info">
+                            <strong>High contrast dark ⬛</strong>
+                            <span>Dark background with high-contrast colours for low-vision users</span>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle high contrast">
+                            <input type="checkbox" id="a11y-high-contrast" onchange="window.a11y && window.a11y.set('highContrast', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Large text (legacy) -->
+                    <div class="plugin-row">
+                        <div class="plugin-info">
+                            <strong>Large text (legacy)</strong>
+                            <span>Quick +20% font size boost for UI chrome (use Text size slider above for finer control)</span>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle large text">
+                            <input type="checkbox" id="a11y-large-text" onchange="window.a11y && window.a11y.set('largeText', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Reduced motion -->
+                    <div class="plugin-row">
+                        <div class="plugin-info">
+                            <strong>Reduced motion</strong>
+                            <span>Disables animations and transitions (also respects OS setting)</span>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle reduced motion">
+                            <input type="checkbox" id="a11y-reduced-motion" onchange="window.a11y && window.a11y.set('reducedMotion', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Provider Templates -->
+                <div class="section">
+                    <h2>Quick Setup</h2>
+                    <p>Select a pre-configured provider or create custom:</p>
+                    <div id="templates-container" class="templates-grid"></div>
+                </div>
+                
+                <!-- Configuration Form -->
+                <div class="section">
+                    <h2>Configuration</h2>
+                    <form id="settingsForm">
+                        <div class="form-group">
+                            <label for="provider_name">Provider Name</label>
+                            <input type="text" id="provider_name" required placeholder="e.g., Claude, OpenAI, My Custom LLM">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="api_format">API Format</label>
+                                <select id="api_format" required>
+                                    <option value="openai">OpenAI Compatible</option>
+                                    <option value="anthropic">Anthropic Claude</option>
+                                    <option value="ollama">Ollama (Local)</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="auth_type">Authentication</label>
+                                <select id="auth_type">
+                                    <option value="bearer">Bearer Token</option>
+                                    <option value="api_key">API Key Header</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="api_endpoint">API Endpoint URL</label>
+                            <input type="url" id="api_endpoint" required placeholder="https://api.provider.com/v1/chat/completions">
+                            <small>Full URL to the chat completion endpoint</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="api_key">API Key</label>
+                            <input type="password" id="api_key" placeholder="Leave blank to keep existing key">
+                            <small>Your API key will be encrypted and stored securely</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="model_name">Model Name</label>
+                            <input type="text" id="model_name" placeholder="e.g., gpt-4, claude-sonnet-4">
+                            <small>Leave blank to use provider default</small>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="temperature">Temperature</label>
+                                <input type="number" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                                <small>0.0 = deterministic, 1.0+ = creative</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="max_tokens">Max Tokens</label>
+                                <input type="number" id="max_tokens" min="100" max="100000" value="1000">
+                                <small>Maximum response length</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                            <button type="button" id="test-btn" class="btn btn-secondary">Test Connection</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div id="settings-message" class="message hidden"></div>
+
+                <hr class="section-divider">
+
+                <!-- Data Export -->
+                <div class="section">
+                    <h2>📦 Your Data</h2>
+                    <p>Download a full copy of your conversations, messages, and wellness check-ins as a JSON file.</p>
+                    <div class="form-actions">
+                        <button type="button" id="export-btn" class="btn btn-secondary">⬇ Export My Data</button>
+                    </div>
+                    <div id="export-message" class="message hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/settings.js"></script>
+    <script src="js/helpbot.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
+        });
+      }
+    </script>
+</body>
+</html>

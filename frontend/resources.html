@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#060e1c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>Resources - AccessBot</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/accessibility.css">
+    <link rel="stylesheet" href="css/helpbot.css">
+    <link rel="stylesheet" href="css/resources.css">
+</head>
+<body>
+    <div id="a11y-announcement" aria-live="assertive" aria-atomic="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
+
+    <div class="settings-container">
+
+        <!-- Header -->
+        <div class="settings-header">
+            <h1>🗂️ Resource Directory</h1>
+            <div class="header-actions" style="display:flex;gap:10px;flex-wrap:wrap;">
+                <a href="/" class="btn btn-secondary">← Chat</a>
+                <a href="/settings.html" class="btn btn-secondary">Settings</a>
+            </div>
+        </div>
+
+        <!-- Search + filter bar -->
+        <div class="resource-search-bar" role="search" aria-label="Search resources">
+            <label for="resource-search" class="sr-only">Search resources</label>
+            <input
+                id="resource-search"
+                type="search"
+                placeholder="Search resources…"
+                autocomplete="off"
+                aria-controls="resource-grid"
+                aria-label="Filter resources by keyword"
+            >
+        </div>
+
+        <!-- Category filter chips -->
+        <div class="category-chips" role="group" aria-label="Filter by category">
+            <button class="chip chip-active" data-cat="all">All</button>
+            <button class="chip" data-cat="crisis">🆘 Crisis</button>
+            <button class="chip" data-cat="mental-health">🧠 Mental Health</button>
+            <button class="chip" data-cat="disability">♿ Disability</button>
+            <button class="chip" data-cat="healthcare">💊 Healthcare</button>
+            <button class="chip" data-cat="peer-support">💬 Peer Support</button>
+            <button class="chip" data-cat="financial">💰 Financial</button>
+            <button class="chip" data-cat="digital">📱 Digital Access</button>
+        </div>
+
+        <!-- No results message -->
+        <div id="no-results" class="resource-empty hidden" role="status" aria-live="polite">
+            No resources found for that search. Try different keywords.
+        </div>
+
+        <!-- Resource grid -->
+        <div id="resource-grid" class="resource-grid" role="list" aria-label="Resources">
+
+            <!-- ── CRISIS ────────────────────────────────────────────────────── -->
+            <article class="resource-card" data-cat="crisis" data-tags="crisis hotline suicide prevention phone call" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">🆘</span>
+                    <span class="resource-cat-label">Crisis</span>
+                </div>
+                <h2 class="resource-title">988 Suicide & Crisis Lifeline</h2>
+                <p class="resource-desc">Free, confidential crisis support 24/7. Call or text <strong>988</strong>. Chat available online. Also supports Veterans and LGBTQ+.</p>
+                <div class="resource-tags"><span>phone</span><span>chat</span><span>US</span><span>24/7</span></div>
+                <a href="https://988lifeline.org" target="_blank" rel="noopener" class="resource-link" aria-label="Visit 988 Suicide and Crisis Lifeline website (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="crisis" data-tags="crisis text line sms texting" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">🆘</span>
+                    <span class="resource-cat-label">Crisis</span>
+                </div>
+                <h2 class="resource-title">Crisis Text Line</h2>
+                <p class="resource-desc">Text <strong>HOME</strong> to 741741. Free, 24/7 mental health support via text message. No phone call needed.</p>
+                <div class="resource-tags"><span>text</span><span>US</span><span>24/7</span><span>free</span></div>
+                <a href="https://www.crisistextline.org" target="_blank" rel="noopener" class="resource-link" aria-label="Visit Crisis Text Line website (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="crisis" data-tags="crisis international worldwide hotline" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">🆘</span>
+                    <span class="resource-cat-label">Crisis</span>
+                </div>
+                <h2 class="resource-title">Findahelpline.com</h2>
+                <p class="resource-desc">Find crisis lines by country. Covers 200+ countries and territories. No matter where you are, there is help.</p>
+                <div class="resource-tags"><span>global</span><span>directory</span></div>
+                <a href="https://findahelpline.com" target="_blank" rel="noopener" class="resource-link" aria-label="Visit Findahelpline website (opens in new tab)">Visit site →</a>
+            </article>
+
+            <!-- ── MENTAL HEALTH ──────────────────────────────────────────────── -->
+            <article class="resource-card" data-cat="mental-health" data-tags="nami mental health alliance education advocacy" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">🧠</span>
+                    <span class="resource-cat-label">Mental Health</span>
+                </div>
+                <h2 class="resource-title">NAMI — National Alliance on Mental Illness</h2>
+                <p class="resource-desc">Education, peer support groups, and advocacy. NAMI HelpLine: 1-800-950-NAMI (6264). Free support and info.</p>
+                <div class="resource-tags"><span>US</span><span>helpline</span><span>support groups</span></div>
+                <a href="https://nami.org" target="_blank" rel="noopener" class="resource-link" aria-label="Visit NAMI website (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="mental-health" data-tags="mental health government medlineplus nih resources" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">🧠</span>
+                    <span class="resource-cat-label">Mental Health</span>
+                </div>
+                <h2 class="resource-title">MentalHealth.gov</h2>
+                <p class="resource-desc">US government resource for understanding mental health conditions, warning signs, treatment options, and finding local help.</p>
+                <div class="resource-tags"><span>US</span><span>information</span><span>government</span></div>
+                <a href="https://www.mentalhealth.gov" target="_blank" rel="noopener" class="resource-link" aria-label="Visit MentalHealth.gov (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="mental-health" data-tags="therapy affordable sliding scale open path" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">🧠</span>
+                    <span class="resource-cat-label">Mental Health</span>
+                </div>
+                <h2 class="resource-title">Open Path Collective</h2>
+                <p class="resource-desc">Find affordable therapy ($30–$80/session) from licensed therapists. Income-based pricing for under-served communities.</p>
+                <div class="resource-tags"><span>US</span><span>therapy</span><span>affordable</span></div>
+                <a href="https://openpathcollective.org" target="_blank" rel="noopener" class="resource-link" aria-label="Visit Open Path Collective (opens in new tab)">Visit site →</a>
+            </article>
+
+            <!-- ── DISABILITY ─────────────────────────────────────────────────── -->
+            <article class="resource-card" data-cat="disability" data-tags="disability rights ada accommodation education" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">♿</span>
+                    <span class="resource-cat-label">Disability</span>
+                </div>
+                <h2 class="resource-title">ADA National Network</h2>
+                <p class="resource-desc">Free guidance on ADA rights, workplace accommodations, housing, and public services. Helpline: 1-800-949-4232.</p>
+                <div class="resource-tags"><span>US</span><span>rights</span><span>ADA</span></div>
+                <a href="https://adata.org" target="_blank" rel="noopener" class="resource-link" aria-label="Visit ADA National Network (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="disability" data-tags="disability benefits SSI SSDI social security" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">♿</span>
+                    <span class="resource-cat-label">Disability</span>
+                </div>
+                <h2 class="resource-title">Social Security Disability (SSDI/SSI)</h2>
+                <p class="resource-desc">Apply for disability benefits through the US Social Security Administration. Includes SSDI (work-based) and SSI (need-based).</p>
+                <div class="resource-tags"><span>US</span><span>benefits</span><span>government</span></div>
+                <a href="https://www.ssa.gov/disability" target="_blank" rel="noopener" class="resource-link" aria-label="Visit SSA Disability site (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="disability" data-tags="disability independent living center ILC services" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">♿</span>
+                    <span class="resource-cat-label">Disability</span>
+                </div>
+                <h2 class="resource-title">Independent Living Centers (CIL Finder)</h2>
+                <p class="resource-desc">Find your local Center for Independent Living — peer-run organizations providing services to people with any disability.</p>
+                <div class="resource-tags"><span>US</span><span>local</span><span>peer-run</span></div>
+                <a href="https://ilru.org/projects/cil-net/cil-center-and-association-directory" target="_blank" rel="noopener" class="resource-link" aria-label="Visit CIL Directory (opens in new tab)">Visit site →</a>
+            </article>
+
+            <!-- ── HEALTHCARE ─────────────────────────────────────────────────── -->
+            <article class="resource-card" data-cat="healthcare" data-tags="FQHC community health center sliding scale low income" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">💊</span>
+                    <span class="resource-cat-label">Healthcare</span>
+                </div>
+                <h2 class="resource-title">HRSA Find a Health Center</h2>
+                <p class="resource-desc">Find federally funded community health centers that offer services on a sliding-fee scale based on your income. Works regardless of insurance status.</p>
+                <div class="resource-tags"><span>US</span><span>primary care</span><span>free/low-cost</span></div>
+                <a href="https://findahealthcenter.hrsa.gov" target="_blank" rel="noopener" class="resource-link" aria-label="Visit HRSA Health Center finder (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="healthcare" data-tags="prescription medication assistance free low cost RxHope" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">💊</span>
+                    <span class="resource-cat-label">Healthcare</span>
+                </div>
+                <h2 class="resource-title">NeedyMeds — Medication Assistance</h2>
+                <p class="resource-desc">Find patient assistance programs for prescription drugs. Many pharmaceutical companies provide free or low-cost medication.</p>
+                <div class="resource-tags"><span>US</span><span>medication</span><span>free</span></div>
+                <a href="https://www.needymeds.org" target="_blank" rel="noopener" class="resource-link" aria-label="Visit NeedyMeds website (opens in new tab)">Visit site →</a>
+            </article>
+
+            <!-- ── PEER SUPPORT ───────────────────────────────────────────────── -->
+            <article class="resource-card" data-cat="peer-support" data-tags="7 cups listeners emotional chat anxiety depression" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">💬</span>
+                    <span class="resource-cat-label">Peer Support</span>
+                </div>
+                <h2 class="resource-title">7 Cups</h2>
+                <p class="resource-desc">Free online chat with trained volunteer listeners. Available 24/7. Also offers affordable online therapy. Good for anxiety, depression, loneliness.</p>
+                <div class="resource-tags"><span>global</span><span>chat</span><span>free</span><span>24/7</span></div>
+                <a href="https://www.7cups.com" target="_blank" rel="noopener" class="resource-link" aria-label="Visit 7 Cups website (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="peer-support mental-health" data-tags="TalkLife peer support community mental wellbeing app" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">💬</span>
+                    <span class="resource-cat-label">Peer Support</span>
+                </div>
+                <h2 class="resource-title">TalkLife</h2>
+                <p class="resource-desc">Peer mental health support community. Share what you're going through and get support from people who understand. Moderated for safety.</p>
+                <div class="resource-tags"><span>global</span><span>app</span><span>community</span></div>
+                <a href="https://talklife.com" target="_blank" rel="noopener" class="resource-link" aria-label="Visit TalkLife website (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="peer-support disability" data-tags="DBSA depression bipolar support alliance groups" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">💬</span>
+                    <span class="resource-cat-label">Peer Support</span>
+                </div>
+                <h2 class="resource-title">DBSA — Depression & Bipolar Support Alliance</h2>
+                <p class="resource-desc">Peer support groups (online and in-person) for people with mood disorders. Run by and for people with lived experience.</p>
+                <div class="resource-tags"><span>US</span><span>support groups</span><span>bipolar</span><span>depression</span></div>
+                <a href="https://www.dbsalliance.org" target="_blank" rel="noopener" class="resource-link" aria-label="Visit DBSA website (opens in new tab)">Visit site →</a>
+            </article>
+
+            <!-- ── FINANCIAL ──────────────────────────────────────────────────── -->
+            <article class="resource-card" data-cat="financial" data-tags="benefits eligibility food stamps medicaid housing assistance" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">💰</span>
+                    <span class="resource-cat-label">Financial</span>
+                </div>
+                <h2 class="resource-title">Benefits.gov</h2>
+                <p class="resource-desc">Official US government site to find benefits you may be entitled to. Covers food assistance, housing, healthcare, disability, and more.</p>
+                <div class="resource-tags"><span>US</span><span>government</span><span>eligibility</span></div>
+                <a href="https://www.benefits.gov" target="_blank" rel="noopener" class="resource-link" aria-label="Visit Benefits.gov (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="financial" data-tags="211 local help food bank housing utilities emergency" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">💰</span>
+                    <span class="resource-cat-label">Financial</span>
+                </div>
+                <h2 class="resource-title">211 — Local Help Connector</h2>
+                <p class="resource-desc">Call or text <strong>211</strong> to find local food banks, housing assistance, utility help, and more. Available in most of the US and Canada.</p>
+                <div class="resource-tags"><span>US</span><span>Canada</span><span>local</span><span>24/7</span></div>
+                <a href="https://www.211.org" target="_blank" rel="noopener" class="resource-link" aria-label="Visit 211.org (opens in new tab)">Visit site →</a>
+            </article>
+
+            <!-- ── DIGITAL ACCESS ─────────────────────────────────────────────── -->
+            <article class="resource-card" data-cat="digital" data-tags="web accessibility WCAG screen reader guide" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">📱</span>
+                    <span class="resource-cat-label">Digital Access</span>
+                </div>
+                <h2 class="resource-title">WebAIM — Web Accessibility Resources</h2>
+                <p class="resource-desc">Guides, tools, and tutorials for web accessibility. Includes screen reader guides, contrast checkers, and WCAG explanations for users and developers.</p>
+                <div class="resource-tags"><span>global</span><span>accessibility</span><span>screen reader</span></div>
+                <a href="https://webaim.org" target="_blank" rel="noopener" class="resource-link" aria-label="Visit WebAIM website (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="digital" data-tags="affordable connectivity FCC internet subsidy low income broadband" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">📱</span>
+                    <span class="resource-cat-label">Digital Access</span>
+                </div>
+                <h2 class="resource-title">FCC Affordable Connectivity Program</h2>
+                <p class="resource-desc">Up to $30/month ($75 on tribal lands) discount on internet service for qualifying low-income households. Also device discounts available.</p>
+                <div class="resource-tags"><span>US</span><span>internet</span><span>subsidy</span></div>
+                <a href="https://www.fcc.gov/acp" target="_blank" rel="noopener" class="resource-link" aria-label="Visit FCC ACP program page (opens in new tab)">Visit site →</a>
+            </article>
+
+            <article class="resource-card" data-cat="digital disability" data-tags="AT assistive technology devices low vision blind deaf" role="listitem">
+                <div class="resource-header">
+                    <span class="resource-cat-badge" aria-hidden="true">📱</span>
+                    <span class="resource-cat-label">Digital Access</span>
+                </div>
+                <h2 class="resource-title">Assistive Technology Industry Association</h2>
+                <p class="resource-desc">Find assistive technology products, vendors, and funding resources. Covers communication, mobility, vision, hearing, and cognitive aids.</p>
+                <div class="resource-tags"><span>global</span><span>AT devices</span><span>low vision</span></div>
+                <a href="https://www.atia.org" target="_blank" rel="noopener" class="resource-link" aria-label="Visit ATIA website (opens in new tab)">Visit site →</a>
+            </article>
+
+        </div><!-- /resource-grid -->
+
+        <p class="resource-footer">
+            Know a resource that should be here? 
+            <a href="/" class="resource-footer-link">Chat with AccessBot</a> and suggest it.
+        </p>
+
+    </div>
+
+    <script src="js/resources.js"></script>
+    <script src="js/helpbot.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+      }
+    </script>
+</body>
+</html>

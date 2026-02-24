@@ -1,0 +1,100 @@
+# ==============================================================================
+# AccessBot — .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Secrets and environment files
+# Never commit real credentials. Only .env.example is safe to commit.
+# ------------------------------------------------------------------------------
+.env
+.env.local
+.env.production
+*.env
+!.env.example
+
+# ------------------------------------------------------------------------------
+# Database data directory
+# postgres_data/ is a bind-mounted volume that holds live database files.
+# Committing this would expose all user records, chat history, and settings.
+# ------------------------------------------------------------------------------
+postgres_data/
+
+# ------------------------------------------------------------------------------
+# Python
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# ------------------------------------------------------------------------------
+# Docker
+# ------------------------------------------------------------------------------
+docker-compose.override.yml
+docker-compose.local.yml
+
+# ------------------------------------------------------------------------------
+# Logs
+# ------------------------------------------------------------------------------
+*.log
+logs/
+*.out
+
+# ------------------------------------------------------------------------------
+# OS and editor artefacts
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ------------------------------------------------------------------------------
+# Node / frontend tooling (if added later)
+# ------------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn
+
+# ------------------------------------------------------------------------------
+# Misc uploads / local test files
+# ------------------------------------------------------------------------------
+Project_Plan.md
+uploads/
+*.sqlite
+*.sqlite3
+*.db

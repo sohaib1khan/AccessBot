@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#060e1c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AccessBot">
+    <meta name="description" content="Accessible AI companion for support and mental wellness">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>AccessBot - AI Companion</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/accessibility.css">
+    <link rel="stylesheet" href="css/helpbot.css">
+</head>
+<body class="page-chat">
+    <!-- Skip to main content (keyboard/screen reader) -->
+    <a class="skip-to-content" href="#chat-main">Skip to main content</a>
+    <!-- Screen reader live announcements -->
+    <div id="a11y-announcement" aria-live="assertive" aria-atomic="true" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
+    <!-- Auth Container (shown when not logged in) -->
+    <div id="auth-container" class="container">
+        <div class="auth-card">
+            <h1>AccessBot</h1>
+            <p class="tagline">Your AI companion for support and accessibility</p>
+            
+            <!-- Login Form -->
+            <div id="login-form" class="form-section">
+                <h2>Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" required autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <p class="switch-form" id="register-link-row">
+                    Don't have an account? 
+                    <a href="#" id="show-register">Register</a>
+                </p>
+            </div>
+            
+            <!-- Register Form -->
+            <div id="register-form" class="form-section hidden">
+                <h2>Register</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email (optional)</label>
+                        <input type="email" id="register-email">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+                <p class="switch-form">
+                    Already have an account? 
+                    <a href="#" id="show-login">Login</a>
+                </p>
+            </div>
+            
+            <div id="auth-error" class="error-message hidden"></div>
+        </div>
+    </div>
+    
+    <!-- Chat Container (shown when logged in) -->
+    <div id="chat-container" class="container hidden">
+        <div class="chat-header">
+            <!-- Row 1: branding + user + logout -->
+            <div class="chat-header-top">
+                <button id="sidebar-toggle" aria-label="Toggle conversation list" aria-expanded="false" aria-controls="conversations-sidebar">☰</button>
+                <h1>AccessBot</h1>
+                <div class="chat-header-user">
+                    <span id="username-display"></span>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+            <!-- Row 2: nav links -->
+            <nav class="chat-header-nav" aria-label="Main navigation">
+                <a href="/insights.html" class="btn btn-nav">📊 Insights</a>
+                <a href="/checkin.html" class="btn btn-nav">📋 Check-in</a>
+                <a href="/resources.html" class="btn btn-nav">🗂️ Resources</a>
+                <a href="/settings.html" class="btn btn-nav">⚙️ Settings</a>
+                <!-- Accessibility toolbar -->
+                <div class="a11y-toolbar">
+                    <button
+                        id="a11y-btn"
+                        class="a11y-btn"
+                        aria-label="Accessibility options"
+                        aria-expanded="false"
+                        aria-controls="a11y-panel"
+                        title="Accessibility options (Alt+A)"
+                    >⚙️ A11y</button>
+                    <div id="a11y-panel" class="a11y-panel" role="dialog" aria-modal="true" aria-label="Accessibility options">
+                        <h3>Accessibility</h3>
+
+                        <!-- Colour theme -->
+                        <div class="a11y-section">
+                            <span class="a11y-section-hd" id="a11y-theme-label">Colour theme</span>
+                            <div class="a11y-themes" role="radiogroup" aria-labelledby="a11y-theme-label">
+                                <button class="theme-btn" data-theme="default" role="radio" aria-checked="true" title="Aurora dark (default)">
+                                    <span class="theme-swatch swatch-default"></span><span>Default</span>
+                                </button>
+                                <button class="theme-btn" data-theme="hc-light" role="radio" aria-checked="false" title="High contrast light">
+                                    <span class="theme-swatch swatch-hc-light"></span><span>HC Light</span>
+                                </button>
+                                <button class="theme-btn" data-theme="yellow-black" role="radio" aria-checked="false" title="Yellow on black">
+                                    <span class="theme-swatch swatch-yellow-black"></span><span>Yellow</span>
+                                </button>
+                                <button class="theme-btn" data-theme="soft-warm" role="radio" aria-checked="false" title="Soft warm">
+                                    <span class="theme-swatch swatch-soft-warm"></span><span>Warm</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Font size slider -->
+                        <div class="a11y-row a11y-slider-row">
+                            <label class="a11y-label" for="a11y-font-zoom">Text size</label>
+                            <div class="a11y-slider-wrap">
+                                <input type="range" id="a11y-font-zoom" min="100" max="200" step="25" value="100"
+                                       aria-label="Text size" aria-valuetext="100%">
+                                <output id="a11y-font-zoom-val" for="a11y-font-zoom" aria-live="polite">100%</output>
+                            </div>
+                        </div>
+
+                        <!-- Line spacing -->
+                        <div class="a11y-row">
+                            <span class="a11y-label" id="a11y-ls-label">Line spacing</span>
+                            <div class="a11y-steppers" role="radiogroup" aria-labelledby="a11y-ls-label">
+                                <button class="step-btn active" data-spacing="normal" role="radio" aria-checked="true">Normal</button>
+                                <button class="step-btn" data-spacing="wide" role="radio" aria-checked="false">Wide</button>
+                                <button class="step-btn" data-spacing="wider" role="radio" aria-checked="false">Wider</button>
+                            </div>
+                        </div>
+
+                        <!-- Letter spacing -->
+                        <div class="a11y-row">
+                            <span class="a11y-label">Letter spacing</span>
+                            <label class="toggle-switch" aria-label="Toggle wide letter spacing">
+                                <input type="checkbox" id="a11y-letter-spacing">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Enhanced focus ring -->
+                        <div class="a11y-row">
+                            <span class="a11y-label">Bold focus ring</span>
+                            <label class="toggle-switch" aria-label="Toggle bold 5px focus ring">
+                                <input type="checkbox" id="a11y-enhanced-focus">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Large targets -->
+                        <div class="a11y-row">
+                            <span class="a11y-label">Large targets</span>
+                            <label class="toggle-switch" aria-label="Toggle large touch targets">
+                                <input type="checkbox" id="a11y-large-targets">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- High contrast dark (legacy) -->
+                        <div class="a11y-row">
+                            <span class="a11y-label">HC dark ⬛</span>
+                            <label class="toggle-switch" aria-label="Toggle high contrast dark mode">
+                                <input type="checkbox" id="a11y-high-contrast">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Reduced motion -->
+                        <div class="a11y-row">
+                            <span class="a11y-label">Reduced motion</span>
+                            <label class="toggle-switch" aria-label="Toggle reduced motion">
+                                <input type="checkbox" id="a11y-reduced-motion">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        
+        <div class="chat-body">
+            <!-- Mobile sidebar overlay -->
+            <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
+            <!-- Conversation Sidebar -->
+            <aside id="conversations-sidebar" class="sidebar" aria-label="Conversation history">
+                <div class="sidebar-header">
+                    <h2>Chats</h2>
+                    <div class="sidebar-hd-actions">
+                        <button id="select-chats-btn" class="btn btn-sm" aria-label="Select conversations to delete">Select</button>
+                        <button id="new-chat-btn" class="btn btn-primary btn-sm" aria-label="Start new conversation">+ New</button>
+                    </div>
+                </div>
+                <div id="bulk-delete-bar" class="bulk-delete-bar" hidden>
+                    <button id="cancel-select-btn" class="bulk-cancel" aria-label="Cancel">&#x2715;</button>
+                    <span id="selected-count">0 selected</span>
+                    <button id="select-all-btn" class="bulk-btn">All</button>
+                    <button id="bulk-delete-btn" class="bulk-btn bulk-btn-del" disabled aria-label="Delete selected">&#128465; Delete</button>
+                </div>
+                <div class="sidebar-search" role="search" aria-label="Search conversations">
+                    <input type="search" id="sidebar-search" placeholder="Search conversations…" aria-label="Search conversations" aria-autocomplete="list" aria-controls="search-results-list" autocomplete="off">
+                </div>
+                <ul id="search-results-list" class="conversations-list search-results-list" role="listbox" aria-label="Search results" hidden></ul>
+                <ul id="conversations-list" class="conversations-list" role="list" aria-label="Past conversations">
+                    <!-- Populated by JS -->
+                </ul>
+            </aside>
+
+            <!-- Main Chat Area -->
+            <div class="chat-main" id="chat-main" role="main">
+                <div id="messages-container" class="messages" role="log" aria-live="polite" aria-label="Chat messages" tabindex="-1"></div>
+
+                <!-- Smart Suggestions bar — shown after AI replies -->
+                <div id="suggestions-bar" class="suggestions-bar" hidden aria-label="Smart suggestions" aria-live="polite"></div>
+                
+                <div class="input-container">
+                    <div id="image-preview-bar" class="image-preview-bar" hidden>
+                        <div class="image-preview-wrap">
+                            <img id="image-preview-thumb" src="" alt="" class="image-preview-thumb">
+                            <button id="image-preview-remove" class="image-preview-remove" aria-label="Remove attached image" title="Remove">&#x2715;</button>
+                        </div>
+                        <span id="image-preview-name" class="image-preview-label"></span>
+                    </div>
+                    <div class="input-row">
+                        <textarea 
+                            id="message-input" 
+                            placeholder="Type your message here... (Enter to send, Shift+Enter for new line)"
+                            rows="3"
+                            aria-label="Message input"
+                        ></textarea>
+                        <div class="input-actions">
+                            <input type="file" id="image-input" accept="image/*" hidden aria-label="Attach image">
+                            <button id="attach-image-btn" class="btn btn-attach" aria-label="Attach image" title="Attach image">&#128247;</button>
+                            <button
+                                id="mic-btn"
+                                class="btn btn-mic"
+                                aria-label="Hold to record voice message"
+                                title="Hold to record (or click to toggle)"
+                                style="display:none"
+                            >&#127897;&#65039;</button>
+                            <button id="send-btn" class="btn btn-primary" aria-label="Send message">Send</button>
+                        </div>
+                    </div>
+                    <div id="recording-indicator" class="recording-indicator hidden" aria-live="assertive">
+                        <span class="recording-dot"></span> Recording... release to send
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Breathing exercise modal -->
+    <div id="breathing-modal" class="breathing-modal" hidden role="dialog" aria-modal="true" aria-labelledby="breathing-title">
+        <div class="breathing-card">
+            <button class="breathing-close" id="breathing-close-btn" aria-label="Close breathing exercise">✕</button>
+            <h2 id="breathing-title">4-7-8 Breathing Exercise</h2>
+            <p class="breathing-subtitle">A simple technique to calm your nervous system</p>
+            <div class="breathing-circle-wrap">
+                <svg class="breathing-ring" viewBox="0 0 120 120" aria-hidden="true">
+                    <circle cx="60" cy="60" r="54" class="ring-track"/>
+                    <circle cx="60" cy="60" r="54" class="ring-progress" id="breathing-ring-progress"/>
+                </svg>
+                <div class="breathing-phase" id="breathing-phase">Inhale</div>
+                <div class="breathing-count" id="breathing-count">4</div>
+            </div>
+            <p class="breathing-instruction" id="breathing-instruction" aria-live="polite">Breathe in through your nose for 4 seconds</p>
+            <div class="breathing-controls">
+                <button id="breathing-start-btn" class="btn btn-primary breathing-start-btn">Start</button>
+                <button id="breathing-stop-btn" class="btn btn-secondary" hidden>Stop</button>
+            </div>
+            <p class="breathing-cycles" id="breathing-cycles-label"></p>
+        </div>
+    </div>
+
+    <script src="js/helpbot.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/voice.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script>
+      // Mobile sidebar toggle
+      (function() {
+        const toggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('conversations-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (!toggle || !sidebar || !overlay) return;
+        function open() {
+          sidebar.classList.add('open');
+          overlay.classList.add('open');
+          toggle.setAttribute('aria-expanded', 'true');
+          sidebar.focus && sidebar.focus();
+        }
+        function close() {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+        toggle.addEventListener('click', function() {
+          sidebar.classList.contains('open') ? close() : open();
+        });
+        overlay.addEventListener('click', close);
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') close();
+        });
+      })();
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
+        });
+      }
+    </script>
+</body>
+</html>

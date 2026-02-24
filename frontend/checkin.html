@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#060e1c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>Daily Check-in - AccessBot</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/accessibility.css">
+    <link rel="stylesheet" href="css/helpbot.css">
+    <link rel="stylesheet" href="css/checkin.css">
+</head>
+<body>
+    <div id="a11y-announcement" aria-live="assertive" aria-atomic="true"
+         style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
+
+    <div class="settings-container" id="checkin-container">
+
+        <!-- Header -->
+        <div class="settings-header">
+            <h1>📋 Daily Check-in</h1>
+            <div class="header-actions" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                <a href="/" class="btn btn-secondary">← Chat</a>
+                <a href="/insights.html" class="btn btn-secondary">📊 Insights</a>
+                <a href="/settings.html" class="btn btn-secondary">Settings</a>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+
+        <!-- Today's status card -->
+        <div class="settings-card" id="today-card">
+            <div class="settings-card-header">
+                <span class="section-icon" aria-hidden="true">📅</span>
+                <h2>Today — <span id="today-date"></span></h2>
+            </div>
+            <div id="today-status" aria-live="polite">
+                <p class="ci-muted">Loading…</p>
+            </div>
+        </div>
+
+        <!-- Check-in / Edit form -->
+        <div class="settings-card hidden" id="form-card">
+            <div class="settings-card-header">
+                <span class="section-icon" id="form-icon" aria-hidden="true">✏️</span>
+                <h2 id="form-title">Check in now</h2>
+            </div>
+
+            <form id="checkin-form" novalidate>
+
+                <!-- Mood selector -->
+                <div class="form-group">
+                    <label id="mood-label">How are you feeling?</label>
+                    <div class="mood-selector" role="group" aria-labelledby="mood-label">
+                        <!-- built by JS -->
+                    </div>
+                    <input type="hidden" id="selected-mood" value="">
+                </div>
+
+                <!-- Manual note -->
+                <div class="form-group">
+                    <label for="checkin-note">Note <span class="ci-muted">(optional)</span></label>
+                    <textarea id="checkin-note" rows="3"
+                        placeholder="What's on your mind today? You can type here or use AI help below…"
+                        aria-describedby="note-hint"></textarea>
+                    <span id="note-hint" class="sr-only">Optional free-text note for your check-in</span>
+                </div>
+
+                <!-- AI help -->
+                <div class="ai-help-section">
+                    <button type="button" id="ai-help-btn" class="btn btn-secondary">
+                        🤖 Get AI help writing your note
+                    </button>
+                    <div id="ai-help-panel" class="ai-help-panel hidden" role="region" aria-label="AI note helper">
+                        <p class="ci-muted" style="margin-bottom:8px;">
+                            Give the AI a bit of extra context and it will draft a short journal reflection for you.
+                            You can edit the suggestion before saving.
+                        </p>
+                        <div class="ai-input-row">
+                            <input type="text" id="ai-context"
+                                placeholder="e.g. rough commute, big meeting at work, feeling behind…"
+                                aria-label="Extra context for AI suggestion">
+                            <button type="button" id="ai-generate-btn" class="btn btn-primary">Generate</button>
+                        </div>
+                        <div id="ai-suggestion-box" class="ai-suggestion-box hidden" role="status" aria-live="polite">
+                            <p class="ai-suggestion-label">✨ AI suggestion</p>
+                            <p id="ai-suggestion-text" class="ai-suggestion-text"></p>
+                            <div class="ai-suggestion-actions">
+                                <button type="button" id="ai-use-btn" class="btn btn-primary btn-sm">Use this</button>
+                                <button type="button" id="ai-dismiss-btn" class="btn btn-secondary btn-sm">Dismiss</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit row -->
+                <div class="form-submit-row">
+                    <button type="submit" id="form-submit-btn" class="btn btn-primary" disabled>
+                        Submit Check-in
+                    </button>
+                    <button type="button" id="form-cancel-btn" class="btn btn-secondary hidden">
+                        Cancel
+                    </button>
+                </div>
+
+                <div id="form-message" class="form-message hidden" role="alert" aria-live="assertive"></div>
+            </form>
+        </div>
+
+        <!-- History -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <span class="section-icon" aria-hidden="true">📜</span>
+                <h2>Check-in History</h2>
+            </div>
+
+            <div id="history-loading" class="ci-state-msg" role="status" aria-live="polite">Loading history…</div>
+            <div id="history-empty" class="ci-state-msg hidden">No check-ins found. Start checking in daily!</div>
+
+            <div id="history-table-wrap" class="hidden" role="region" aria-label="Check-in history table">
+                <table id="history-table" class="ci-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Date</th>
+                            <th scope="col">Mood</th>
+                            <th scope="col">Note</th>
+                            <th scope="col" class="ci-actions-col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- /checkin-container -->
+
+    <script src="js/checkin.js"></script>
+    <script src="js/helpbot.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+      }
+    </script>
+</body>
+</html>

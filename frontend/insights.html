@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#060e1c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>Insights - AccessBot</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/accessibility.css">
+    <link rel="stylesheet" href="css/helpbot.css">
+    <link rel="stylesheet" href="css/insights.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div id="a11y-announcement" aria-live="assertive" aria-atomic="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
+
+    <div class="settings-container" id="insights-container">
+
+        <!-- Header -->
+        <div class="settings-header">
+            <h1>📊 Wellness Insights</h1>
+            <div class="header-actions" style="display:flex;gap:10px;flex-wrap:wrap;">
+                <a href="/" class="btn btn-secondary">← Chat</a>
+                <a href="/checkin.html" class="btn btn-secondary">📋 Check-in</a>
+                <a href="/settings.html" class="btn btn-secondary">Settings</a>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+
+        <!-- Loading / error state -->
+        <div id="insights-loading" class="insight-message" role="status" aria-live="polite">Loading your insights…</div>
+        <div id="insights-error" class="insight-message insight-error hidden" role="alert"></div>
+
+        <!-- Content (hidden until loaded) -->
+        <div id="insights-content" class="hidden">
+
+            <!-- Stat cards row -->
+            <div class="stat-grid" role="list" aria-label="Key statistics">
+                <div class="stat-card" role="listitem">
+                    <div class="stat-icon" aria-hidden="true">🔥</div>
+                    <div>
+                        <div class="stat-value" id="stat-streak">—</div>
+                        <div class="stat-label">Current streak</div>
+                    </div>
+                </div>
+                <div class="stat-card" role="listitem">
+                    <div class="stat-icon" aria-hidden="true">🏆</div>
+                    <div>
+                        <div class="stat-value" id="stat-longest">—</div>
+                        <div class="stat-label">Longest streak</div>
+                    </div>
+                </div>
+                <div class="stat-card" role="listitem">
+                    <div class="stat-icon" aria-hidden="true">💬</div>
+                    <div>
+                        <div class="stat-value" id="stat-messages">—</div>
+                        <div class="stat-label">Total messages</div>
+                    </div>
+                </div>
+                <div class="stat-card" role="listitem">
+                    <div class="stat-icon" aria-hidden="true">📅</div>
+                    <div>
+                        <div class="stat-value" id="stat-since">—</div>
+                        <div class="stat-label">Member since</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mood trend chart -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <span class="section-icon" aria-hidden="true">📈</span>
+                    <h2>30-Day Mood Trend</h2>
+                </div>
+                <div id="no-trend-msg" class="insight-empty hidden">No check-ins in the last 30 days. Use the <code>/mood</code> command in chat to track your mood!</div>
+                <div class="chart-wrap" aria-label="Mood trend line chart">
+                    <canvas id="trendChart" role="img" aria-label="Line chart showing mood scores over the last 30 days"></canvas>
+                </div>
+            </div>
+
+            <!-- Distribution + weekly summaries side by side -->
+            <div class="two-col">
+
+                <!-- Mood distribution -->
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <span class="section-icon" aria-hidden="true">🥧</span>
+                        <h2>Mood Distribution</h2>
+                    </div>
+                    <div id="no-dist-msg" class="insight-empty hidden">Check in to see your mood breakdown.</div>
+                    <div class="chart-wrap chart-wrap-sm" aria-label="Mood distribution chart">
+                        <canvas id="distChart" role="img" aria-label="Bar chart of mood frequency"></canvas>
+                    </div>
+                    <ul id="dist-legend" class="dist-legend" aria-label="Mood distribution details"></ul>
+                </div>
+
+                <!-- Weekly summaries -->
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <span class="section-icon" aria-hidden="true">🗓️</span>
+                        <h2>Weekly Summaries</h2>
+                    </div>
+                    <div id="no-weeks-msg" class="insight-empty hidden">No weekly data yet.</div>
+                    <ul id="weekly-list" class="weekly-list" aria-label="Weekly mood summaries"></ul>
+                </div>
+
+            </div>
+
+            <!-- Last check-in -->
+            <p id="last-checkin-note" class="last-checkin-note" aria-live="polite"></p>
+
+        </div><!-- /insights-content -->
+
+    </div><!-- /insights-container -->
+
+    <script src="js/insights.js"></script>
+    <script src="js/helpbot.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+      }
+    </script>
+</body>
+</html>

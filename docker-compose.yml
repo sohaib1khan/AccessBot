@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: accessbot-postgres
+    environment:
+      POSTGRES_USER: accessbot
+      POSTGRES_PASSWORD: accessbot_password
+      POSTGRES_DB: accessbot
+    ports:
+      - "5432:5432"
+    volumes:
+      - accessbot_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U accessbot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: accessbot-backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - accessbot_backend_src:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://accessbot:accessbot_password@postgres:5432/accessbot
+      - SECRET_KEY=dev-secret-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: nginx:alpine
+    container_name: accessbot-frontend
+    volumes:
+      - accessbot_frontend_src:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  # Postgres persistent data — bind-mounted to ./postgres_data beside docker-compose.yml
+  accessbot_db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/postgres_data
+
+  # Backend source — bind-mounted from project dir (hot-reloads via uvicorn --reload)
+  accessbot_backend_src:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/backend
+
+  # Frontend static files — bind-mounted from project dir, served by nginx
+  accessbot_frontend_src:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/frontend

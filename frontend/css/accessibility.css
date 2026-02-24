@@ -1,0 +1,294 @@
+/* ════════════════════════════════════════════════
+   AccessBot — Accessibility styles (aurora dark)
+   ════════════════════════════════════════════════ */
+
+/* Skip to main content */
+.skip-to-content {
+    position: absolute;
+    top: -100px;
+    left: 16px;
+    background: var(--accent, #00c4a7);
+    color: #041a16;
+    padding: 12px 20px;
+    border-radius: 0 0 8px 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    z-index: 9999;
+    text-decoration: none;
+    transition: top 0.2s;
+}
+.skip-to-content:focus { top: 0; }
+
+/* Global focus ring */
+:focus-visible {
+    outline: 3px solid var(--accent, #00c4a7);
+    outline-offset: 2px;
+}
+
+/* Clear existing suppression */
+button:focus, a:focus, input:focus, select:focus, textarea:focus {
+    /* allow :focus-visible to handle this */
+}
+
+/* ── High-contrast mode ──────────────────────────────────────────── */
+body.high-contrast {
+    --bg-deep:          #000000;
+    --bg-base:          #000000;
+    --bg-card:          #000000;
+    --bg-raised:        #0a0a0a;
+    --bg-hover:         #111111;
+    --accent:           #00ffd0;
+    --accent-hover:     #00ccaa;
+    --accent-dim:       #009977;
+    --accent-glow:      rgba(0, 255, 208, 0.30);
+    --text-primary:     #ffffff;
+    --text-secondary:   #cccccc;
+    --text-muted:       #888888;
+    --border:           #333333;
+    --border-bright:    #555555;
+    --bubble-user:      #003322;
+    --bubble-user-text: #ffffff;
+    --bubble-bot:       #000a1a;
+    --bubble-bot-text:  #ffffff;
+    --error:            #ff8888;
+    --success:          #88ff99;
+}
+
+body.high-contrast * {
+    border-color: var(--border-bright) !important;
+}
+
+body.high-contrast :focus-visible {
+    outline: 4px solid #ffff00 !important;
+    outline-offset: 3px !important;
+}
+
+body.high-contrast .btn-primary {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #ffffff !important;
+}
+
+body.high-contrast .mood-btn.selected {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.high-contrast .message.user {
+    background: #00331a !important;
+    color: #ffffff !important;
+}
+
+body.high-contrast .message.assistant {
+    background: #000d20 !important;
+    color: #ffffff !important;
+}
+
+/* ── Large text mode ─────────────────────────────────────────────── */
+body.large-text { --font-size-base: 20px; }
+
+body.large-text .message  { font-size: 1.1rem; }
+body.large-text .btn      { font-size: 1.1rem; padding: 15px 24px; min-height: 54px; }
+body.large-text .a11y-label,
+body.large-text .a11y-panel h3 { font-size: 1rem; }
+body.large-text .form-group label,
+body.large-text .form-row label  { font-size: 1.05rem; }
+body.large-text .form-group input,
+body.large-text .form-group select,
+body.large-text .form-group textarea,
+body.large-text .form-row input,
+body.large-text .form-row select,
+body.large-text .form-row textarea { font-size: 1.05rem; }
+body.large-text .conversations-list li { font-size: 1rem; }
+body.large-text .mood-btn { font-size: 1.1rem; padding: 13px 22px; }
+body.large-text .plugin-info h3,
+body.large-text .a11y-setting-info h3 { font-size: 1.05rem; }
+
+/* ── Reduced motion ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+body.reduced-motion *,
+body.reduced-motion *::before,
+body.reduced-motion *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+}
+
+/* ── Screen reader only ──────────────────────────────────────────── */
+.sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Low Vision Enhancements (v2)
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Font zoom ───────────────────────────────────────────────────────
+   JS sets --font-zoom on <html> (e.g. 1.25).  All rem-based sizes scale.
+*/
+html {
+    font-size: calc(var(--font-size-base, 17px) * var(--font-zoom, 1));
+}
+
+/* ── Line spacing ─────────────────────────────────────────────────── */
+body.line-spacing-wide  .message,
+body.line-spacing-wide  .messages,
+body.line-spacing-wide  p,
+body.line-spacing-wide  li,
+body.line-spacing-wide  .resource-desc,
+body.line-spacing-wide  .plugin-info span,
+body.line-spacing-wide  .conversations-list li,
+body.line-spacing-wide  .form-group label,
+body.line-spacing-wide  .form-group small { line-height: 2 !important; }
+
+body.line-spacing-wider .message,
+body.line-spacing-wider .messages,
+body.line-spacing-wider p,
+body.line-spacing-wider li,
+body.line-spacing-wider .resource-desc,
+body.line-spacing-wider .plugin-info span,
+body.line-spacing-wider .conversations-list li,
+body.line-spacing-wider .form-group label,
+body.line-spacing-wider .form-group small { line-height: 2.6 !important; }
+
+/* ── Letter spacing ──────────────────────────────────────────────── */
+body.letter-spacing-wide .message,
+body.letter-spacing-wide p,
+body.letter-spacing-wide li,
+body.letter-spacing-wide input,
+body.letter-spacing-wide textarea,
+body.letter-spacing-wide .resource-desc,
+body.letter-spacing-wide .conversations-list li,
+body.letter-spacing-wide .plugin-info span,
+body.letter-spacing-wide .form-group label {
+    letter-spacing: 0.06em !important;
+    word-spacing:   0.12em !important;
+}
+
+/* ── Enhanced focus ring ─────────────────────────────────────────── */
+body.enhanced-focus :focus-visible {
+    outline:        5px solid var(--accent) !important;
+    outline-offset: 4px !important;
+    box-shadow:     0 0 0 9px var(--accent-glow, rgba(0,196,167,0.20)) !important;
+}
+body.enhanced-focus.high-contrast :focus-visible,
+body.enhanced-focus.theme-yellow-black :focus-visible {
+    outline-color: #ffff00 !important;
+    box-shadow:    0 0 0 9px rgba(255,255,0,0.25) !important;
+}
+body.enhanced-focus.theme-hc-light :focus-visible {
+    outline-color: #005a4d !important;
+    box-shadow:    0 0 0 9px rgba(0,90,77,0.25) !important;
+}
+
+/* ── Large touch targets ─────────────────────────────────────────── */
+body.large-targets .btn                        { min-height: 58px !important; padding-left: 22px !important; padding-right: 22px !important; }
+body.large-targets .btn-sm                     { min-height: 50px !important; padding: 10px 18px !important; }
+body.large-targets input:not([type=checkbox]):not([type=radio]):not([type=range]),
+body.large-targets select,
+body.large-targets textarea                    { min-height: 52px !important; padding: 14px 18px !important; }
+body.large-targets .conversations-list li      { min-height: 54px !important; display: flex !important; align-items: center !important; padding: 12px 16px !important; }
+body.large-targets .toggle-switch             { width: 56px !important; height: 32px !important; }
+body.large-targets .toggle-slider::before     { width: 24px !important; height: 24px !important; }
+body.large-targets .mood-btn                   { min-height: 58px !important; padding: 14px 26px !important; }
+body.large-targets .theme-btn                  { min-height: 54px !important; padding: 8px 12px !important; }
+body.large-targets .step-btn                   { min-height: 44px !important; padding: 8px 14px !important; }
+
+/* ── Colour theme: High contrast light ──────────────────────────── */
+body.theme-hc-light {
+    --bg-deep:          #ffffff;
+    --bg-base:          #f4f4f4;
+    --bg-card:          #ffffff;
+    --bg-raised:        #e8e8e8;
+    --bg-hover:         #d4d4d4;
+    --accent:           #005a4d;
+    --accent-hover:     #003d35;
+    --accent-dim:       #007a6a;
+    --accent-glow:      rgba(0, 90, 77, 0.20);
+    --text-primary:     #000000;
+    --text-secondary:   #111111;
+    --text-muted:       #444444;
+    --border:           #999999;
+    --border-bright:    #555555;
+    --bubble-user:      #003322;
+    --bubble-user-text: #ffffff;
+    --bubble-bot:       #eeeeee;
+    --bubble-bot-text:  #000000;
+    --error-bg:         #fff0f0;
+    --error:            #cc0000;
+    --error-border:     #cc0000;
+    --success:          #006600;
+    --success-bg:       #e8f5e8;
+    color-scheme: light;
+}
+body.theme-hc-light { background-image: none; }
+body.theme-hc-light :focus-visible { outline-color: #005a4d !important; }
+
+/* ── Colour theme: Yellow on black ──────────────────────────────── */
+body.theme-yellow-black {
+    --bg-deep:          #000000;
+    --bg-base:          #000000;
+    --bg-card:          #000000;
+    --bg-raised:        #0d0d00;
+    --bg-hover:         #1a1900;
+    --accent:           #ffe94d;
+    --accent-hover:     #ffd700;
+    --accent-dim:       #ccb800;
+    --accent-glow:      rgba(255, 233, 77, 0.25);
+    --text-primary:     #ffe94d;
+    --text-secondary:   #ffdd22;
+    --text-muted:       #ccaa00;
+    --border:           #554400;
+    --border-bright:    #887700;
+    --bubble-user:      #1a1500;
+    --bubble-user-text: #ffe94d;
+    --bubble-bot:       #080700;
+    --bubble-bot-text:  #ffe94d;
+    --error-bg:         #330000;
+    --error:            #ff8888;
+    --error-border:     #cc4444;
+    --success:          #88ff44;
+    --success-bg:       #001100;
+}
+body.theme-yellow-black { background-image: none; }
+body.theme-yellow-black :focus-visible { outline-color: #ffffff !important; }
+
+/* ── Colour theme: Soft warm ─────────────────────────────────────── */
+body.theme-soft-warm {
+    --bg-deep:          #1a1008;
+    --bg-base:          #1f1510;
+    --bg-card:          #261a12;
+    --bg-raised:        #2e2018;
+    --bg-hover:         #3a2a1c;
+    --accent:           #e8a060;
+    --accent-hover:     #d08040;
+    --accent-dim:       #a06030;
+    --accent-glow:      rgba(232, 160, 96, 0.25);
+    --text-primary:     #f5e6d0;
+    --text-secondary:   #c8a878;
+    --text-muted:       #8a7060;
+    --border:           #4a3020;
+    --border-bright:    #6a4828;
+    --bubble-user:      #2a1808;
+    --bubble-user-text: #f5e6d0;
+    --bubble-bot:       #1a1008;
+    --bubble-bot-text:  #f5e6d0;
+    --error-bg:         #2a0808;
+    --error:            #ff9977;
+    --error-border:     #884422;
+    --success:          #88dd77;
+    --success-bg:       #0a2008;
+}
+body.theme-soft-warm { background-image: none; }
