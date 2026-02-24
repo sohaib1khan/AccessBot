@@ -19,11 +19,11 @@ services:
   backend:
     build: ./backend
     container_name: accessbot-backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8009 --reload
     volumes:
       - accessbot_backend_src:/app
     ports:
-      - "8000:8000"
+      - "8009:8009"
     environment:
       - DATABASE_URL=postgresql://accessbot:accessbot_password@postgres:5432/accessbot
       - SECRET_KEY=dev-secret-key-change-in-production
