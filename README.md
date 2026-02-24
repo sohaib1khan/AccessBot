@@ -332,7 +332,7 @@ all live database files.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/accessbot.git
+git clone https://github.com/sohaib1khan/AccessBot.git
 cd accessbot
 
 # 2. Create the directory Docker will use for the database
