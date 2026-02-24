@@ -467,8 +467,8 @@ testBtn.addEventListener('click', async () => {
         if (response.ok) {
             showMessage('Connection successful! LLM is configured correctly.', 'success');
         } else {
-            const error = await response.json();
-            showMessage('Connection failed: ' + error.detail, 'error');
+            const error = await response.json().catch(() => ({}));
+            showMessage('Connection failed: ' + (error.detail || `HTTP ${response.status}`), 'error');
         }
     } catch (error) {
         showMessage('Connection failed: ' + error.message, 'error');
