@@ -207,93 +207,39 @@ function setupEventListeners() {
 function setupHelpChatbot() {
     const toggle = document.getElementById('help-chat-toggle');
     const panel = document.getElementById('help-chat-panel');
-    const closeBtn = document.getElementById('help-chat-close');
-    const promptButtons = document.querySelectorAll('.help-chat-prompt');
-    const customInput = document.getElementById('help-chat-input');
-    const customSend = document.getElementById('help-chat-send');
-    if (!toggle || !panel) return;
+    if (!toggle) return;
     if (toggle.dataset.boundHelp === '1') return;
     toggle.dataset.boundHelp = '1';
     toggle.type = 'button';
 
-    const openPanel = () => {
-        panel.hidden = false;
-        toggle.setAttribute('aria-expanded', 'true');
+    const openExistingHelpbot = () => {
+        const hbTrigger = document.getElementById('helpbot-trigger');
+        if (!hbTrigger) return false;
+        hbTrigger.click();
+        return true;
     };
 
-    const closePanel = () => {
+    if (panel) {
         panel.hidden = true;
-        toggle.setAttribute('aria-expanded', 'false');
-    };
+        panel.style.display = 'none';
+    }
 
     toggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (panel.hidden) {
-            openPanel();
-        } else {
-            closePanel();
-        }
+        if (openExistingHelpbot()) return;
+
+        // HelpBot script may not have initialized yet.
+        // Retry once shortly after click for reliability.
+        setTimeout(() => {
+            openExistingHelpbot();
+        }, 150);
     });
 
     toggle.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             toggle.click();
-        }
-    });
-
-    if (closeBtn) {
-        closeBtn.type = 'button';
-        closeBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            closePanel();
-        });
-    }
-
-    panel.addEventListener('click', (e) => e.stopPropagation());
-
-    promptButtons.forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const prompt = btn.dataset.helpPrompt;
-            if (!prompt) return;
-
-            messageInput.value = buildSiteHelpPrompt(prompt);
-            closePanel();
-
-            if (sendBtn.disabled || isRequestInFlight) return;
-            await sendMessage();
-        });
-    });
-
-    const submitCustomHelp = async () => {
-        if (!customInput) return;
-        const question = customInput.value.trim();
-        if (!question) return;
-
-        messageInput.value = buildSiteHelpPrompt(question);
-        customInput.value = '';
-        closePanel();
-
-        if (sendBtn.disabled || isRequestInFlight) return;
-        await sendMessage();
-    };
-
-    if (customSend) customSend.addEventListener('click', submitCustomHelp);
-    if (customInput) {
-        customInput.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                await submitCustomHelp();
-            }
-        });
-    }
-
-    document.addEventListener('click', (e) => {
-        if (panel.hidden) return;
-        if (!panel.contains(e.target) && !toggle.contains(e.target)) {
-            closePanel();
         }
     });
 }

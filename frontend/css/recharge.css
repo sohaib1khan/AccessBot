@@ -147,6 +147,115 @@
     font-style: italic;
 }
 
+.custom-item-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.custom-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.custom-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+    flex: 1;
+}
+
+.custom-field-wide {
+    flex: 2;
+    min-width: 260px;
+}
+
+.custom-field label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.custom-field input,
+.custom-field select,
+.custom-field textarea {
+    width: 100%;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    border: 1px solid var(--border-bright);
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-family: var(--font-base);
+    font-size: 0.85rem;
+}
+
+.custom-field input:focus,
+.custom-field select:focus,
+.custom-field textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent-dim);
+}
+
+.custom-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.custom-item-message {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.custom-item-message.error {
+    color: var(--error);
+}
+
+.custom-items-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 10px;
+}
+
+.custom-item {
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius-md);
+    background: var(--bg-base);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.custom-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-item-actions {
+    margin-top: 6px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.custom-del-btn {
+    border-color: rgba(224,108,117,.5);
+    color: #e06c75;
+}
+
+.custom-del-btn:hover,
+.custom-del-btn:focus-visible {
+    background: rgba(224,108,117,.12);
+}
+
 @media (max-width: 700px) {
     #recharge-search {
         min-width: 100%;

@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from pydantic import BaseModel
 from typing import List
+from uuid import uuid4
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.models.user import User
+from app.models.plugin import UserPlugin
 from app.plugins.manager import plugin_manager
 from app.plugins.daily_checkin.plugin import daily_checkin_plugin
 from app.plugins.mood_tracker.plugin import mood_tracker_plugin
@@ -67,6 +69,85 @@ class RechargeFeedResponse(BaseModel):
     audio: list[dict]
     quote: dict
     updated_at: str
+
+
+class RechargeItemInput(BaseModel):
+    type: str
+    title: str
+    url: str
+    source: str | None = None
+    summary: str | None = None
+
+
+class RechargeItemResponse(BaseModel):
+    id: str
+    type: str
+    title: str
+    url: str
+    source: str
+    summary: str
+
+
+class RechargeCustomItemsResponse(BaseModel):
+    items: list[RechargeItemResponse]
+
+
+VALID_RECHARGE_TYPES = {"article", "video", "audio"}
+
+
+def _recharge_row(user_id: int, db: Session) -> UserPlugin:
+    row = db.query(UserPlugin).filter(
+        UserPlugin.user_id == user_id,
+        UserPlugin.plugin_name == "recharge"
+    ).first()
+    if not row:
+        row = UserPlugin(user_id=user_id, plugin_name="recharge", enabled=True, settings={})
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+    return row
+
+
+def _custom_items(row: UserPlugin) -> list[dict]:
+    settings = row.settings if isinstance(row.settings, dict) else {}
+    items = settings.get("custom_items", [])
+    return items if isinstance(items, list) else []
+
+
+def _save_custom_items(row: UserPlugin, items: list[dict], db: Session):
+    settings = row.settings if isinstance(row.settings, dict) else {}
+    settings["custom_items"] = items
+    row.settings = settings
+    flag_modified(row, "settings")
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+
+
+def _validate_recharge_payload(data: RechargeItemInput) -> dict:
+    item_type = (data.type or "").strip().lower()
+    if item_type not in VALID_RECHARGE_TYPES:
+        raise HTTPException(status_code=400, detail="type must be article, video, or audio")
+
+    title = (data.title or "").strip()
+    url = (data.url or "").strip()
+    source = (data.source or "Custom").strip() or "Custom"
+    summary = (data.summary or "").strip()
+
+    if not title:
+        raise HTTPException(status_code=400, detail="title is required")
+    if not url:
+        raise HTTPException(status_code=400, detail="url is required")
+    if not (url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(status_code=400, detail="url must start with http:// or https://")
+
+    return {
+        "type": item_type,
+        "title": title[:180],
+        "url": url[:500],
+        "source": source[:80],
+        "summary": summary[:500],
+    }
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
@@ -345,3 +426,84 @@ async def recharge_feed(
         "quote": quote,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+@router.get("/recharge/custom-items", response_model=RechargeCustomItemsResponse)
+async def recharge_custom_items(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user-managed recharge items."""
+    if not plugin_manager.is_enabled("recharge", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Recharge plugin is disabled")
+
+    row = _recharge_row(current_user.id, db)
+    return {"items": _custom_items(row)}
+
+
+@router.post("/recharge/custom-items", response_model=RechargeItemResponse)
+async def recharge_add_custom_item(
+    data: RechargeItemInput,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Add a user-managed recharge item."""
+    if not plugin_manager.is_enabled("recharge", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Recharge plugin is disabled")
+
+    clean = _validate_recharge_payload(data)
+    row = _recharge_row(current_user.id, db)
+    items = _custom_items(row)
+
+    item = {
+        "id": uuid4().hex[:12],
+        **clean,
+    }
+    items.insert(0, item)
+    _save_custom_items(row, items, db)
+    return item
+
+
+@router.patch("/recharge/custom-items/{item_id}", response_model=RechargeItemResponse)
+async def recharge_edit_custom_item(
+    item_id: str,
+    data: RechargeItemInput,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Edit a user-managed recharge item."""
+    if not plugin_manager.is_enabled("recharge", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Recharge plugin is disabled")
+
+    clean = _validate_recharge_payload(data)
+    row = _recharge_row(current_user.id, db)
+    items = _custom_items(row)
+
+    for idx, item in enumerate(items):
+        if item.get("id") == item_id:
+            updated = {"id": item_id, **clean}
+            items[idx] = updated
+            _save_custom_items(row, items, db)
+            return updated
+
+    raise HTTPException(status_code=404, detail="Custom item not found")
+
+
+@router.delete("/recharge/custom-items/{item_id}")
+async def recharge_delete_custom_item(
+    item_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a user-managed recharge item."""
+    if not plugin_manager.is_enabled("recharge", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Recharge plugin is disabled")
+
+    row = _recharge_row(current_user.id, db)
+    items = _custom_items(row)
+    remaining = [x for x in items if x.get("id") != item_id]
+    if len(remaining) == len(items):
+        raise HTTPException(status_code=404, detail="Custom item not found")
+
+    _save_custom_items(row, remaining, db)
+    return {"deleted": item_id}

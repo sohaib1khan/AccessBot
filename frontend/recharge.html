@@ -60,6 +60,58 @@
             <div id="recharge-empty" class="recharge-empty hidden">No items matched your search/filter.</div>
             <div id="recharge-grid" class="recharge-grid" role="list" aria-label="Recharge feed items"></div>
         </div>
+
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <span class="section-icon" aria-hidden="true">🛠️</span>
+                <h2>Manage Your Recharge Items</h2>
+            </div>
+
+            <form id="custom-item-form" class="custom-item-form">
+                <input type="hidden" id="custom-item-id">
+                <div class="custom-row">
+                    <div class="custom-field">
+                        <label for="custom-item-type">Type</label>
+                        <select id="custom-item-type" required>
+                            <option value="article">Article</option>
+                            <option value="video">Video</option>
+                            <option value="audio">Audio</option>
+                        </select>
+                    </div>
+                    <div class="custom-field custom-field-wide">
+                        <label for="custom-item-title">Title</label>
+                        <input id="custom-item-title" type="text" maxlength="180" required placeholder="Resource title">
+                    </div>
+                </div>
+
+                <div class="custom-row">
+                    <div class="custom-field custom-field-wide">
+                        <label for="custom-item-url">URL</label>
+                        <input id="custom-item-url" type="url" required placeholder="https://example.com/resource">
+                    </div>
+                    <div class="custom-field">
+                        <label for="custom-item-source">Source</label>
+                        <input id="custom-item-source" type="text" maxlength="80" placeholder="YouTube, TED, Blog...">
+                    </div>
+                </div>
+
+                <div class="custom-row">
+                    <div class="custom-field custom-field-wide">
+                        <label for="custom-item-summary">Summary</label>
+                        <textarea id="custom-item-summary" rows="3" maxlength="500" placeholder="Short summary (optional)"></textarea>
+                    </div>
+                </div>
+
+                <div class="custom-actions">
+                    <button id="custom-item-save" class="btn btn-primary btn-sm" type="submit">Add item</button>
+                    <button id="custom-item-cancel" class="btn btn-secondary btn-sm hidden" type="button">Cancel edit</button>
+                    <span id="custom-item-message" class="custom-item-message" aria-live="polite"></span>
+                </div>
+            </form>
+
+            <div id="custom-items-empty" class="recharge-empty">No custom items yet. Add your own above.</div>
+            <div id="custom-items-list" class="custom-items-list" role="list" aria-label="Your custom recharge items"></div>
+        </div>
     </div>
 
     <script src="js/recharge.js"></script>
