@@ -10,16 +10,17 @@ locally on your own hardware with no dependency on external services.
 ## Table of Contents
 
 1. [What It Does](#what-it-does)
-2. [Architecture Overview](#architecture-overview)
-3. [Request Flow: Chat Message](#request-flow-chat-message)
-4. [Database Schema](#database-schema)
-5. [Plugin System](#plugin-system)
-6. [AI Provider Support](#ai-provider-support)
-7. [Project Structure](#project-structure)
-8. [Getting Started](#getting-started)
-9. [Configuration Reference](#configuration-reference)
-10. [How to Make Common Changes](#how-to-make-common-changes)
-11. [Roadmap](#roadmap)
+2. [Demo](#demo)
+3. [Architecture Overview](#architecture-overview)
+4. [Request Flow: Chat Message](#request-flow-chat-message)
+5. [Database Schema](#database-schema)
+6. [Plugin System](#plugin-system)
+7. [AI Provider Support](#ai-provider-support)
+8. [Project Structure](#project-structure)
+9. [Getting Started](#getting-started)
+10. [Configuration Reference](#configuration-reference)
+11. [How to Make Common Changes](#how-to-make-common-changes)
+12. [Roadmap](#roadmap)
 
 ---
 
@@ -35,6 +36,59 @@ locally on your own hardware with no dependency on external services.
 | Site Navigator | Floating help widget on every page |
 | Voice Input | Microphone support in the chat interface |
 | Accessibility | Four colour themes, font zoom, line/letter spacing, focus ring |
+
+---
+
+## Demo
+
+> **Screenshots and GIFs live in the [`img/`](img/) folder.**
+> The placeholders below are SVG mockups — replace each file with a real
+> screenshot or screen recording when you are ready.
+
+### Main Chat Interface
+
+![AccessBot main chat interface showing a conversation with smart suggestion chips](img/chat-demo.svg)
+
+The primary chat window. Conversations are saved per-session in the sidebar,
+smart suggestion chips appear after each AI reply, and voice input is available
+via the microphone button.
+
+### Daily Check-in
+
+![Daily check-in page with mood selector, energy slider and daily note field](img/checkin-demo.svg)
+
+Log your mood, energy level, and an optional note in under a minute.
+Streak tracking and weekly summaries are updated automatically.
+
+### Wellness Insights
+
+![Wellness insights page showing mood trend bar chart and weekly summary](img/insights-demo.svg)
+
+Visualise 14-day mood trends, your current streak, check-in history, and
+weekly averages — all generated from your local data with no cloud sync.
+
+### Settings — AI Model & Accessibility
+
+![Settings page showing AI model configuration and accessibility theme switcher](img/settings-demo.svg)
+
+Connect any OpenAI-compatible server (LM Studio, Ollama), Anthropic, or a
+custom endpoint. Switch between four accessibility colour themes and adjust
+font size and letter spacing without reloading.
+
+### Retry Failed Messages
+
+![Chat showing a failed user message with a Retry button embedded inside the bubble](img/retry-demo.svg)
+
+When the LLM fails to respond, the original message turns red and a
+**🔄 Retry** button appears directly inside it — no need to retype.
+
+---
+
+> **To add your own screenshots:**
+> 1. Take a screenshot or record a GIF of each screen.
+> 2. Drop the file into the `img/` folder.
+> 3. Update the filename in the Markdown above (e.g. change
+>    `img/chat-demo.svg` → `img/chat-demo.png`).
 
 ---
 
@@ -254,6 +308,12 @@ AccessBot/
 |-- docker-compose.yml          Starts all three containers
 |-- nginx.conf                  Reverse proxy: /api/* -> backend :8000
 |-- .env.example                Copy to .env and fill in real values
+|-- img/                        Screenshots and GIFs for the README Demo section
+|   |-- chat-demo.svg           ← replace with real screenshot
+|   |-- checkin-demo.svg
+|   |-- insights-demo.svg
+|   |-- settings-demo.svg
+|   +-- retry-demo.svg
 |
 |-- backend/
 |   |-- Dockerfile

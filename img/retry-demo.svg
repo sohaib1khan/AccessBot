@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560">
+  <rect width="1200" height="560" fill="#060e1c"/>
+  <!-- sidebar sliver -->
+  <rect x="0" y="0" width="260" height="560" fill="#0a1628"/>
+  <!-- main chat area -->
+  <rect x="260" y="0" width="940" height="560" fill="#0d1a2d"/>
+  <!-- top bar -->
+  <rect x="260" y="0" width="940" height="52" fill="#0d1f35"/>
+  <text x="292" y="31" font-family="system-ui,sans-serif" font-size="15" font-weight="600" fill="#e0efff">Accessibility tips</text>
+
+  <!-- user bubble — normal (earlier exchange) -->
+  <rect x="680" y="72" width="440" height="44" rx="14" fill="#0f3b30"/>
+  <text x="900" y="99" font-family="system-ui,sans-serif" font-size="13" fill="#c8fff5" text-anchor="middle">What accessibility shortcuts do you support?</text>
+
+  <!-- bot reply -->
+  <rect x="292" y="130" width="500" height="76" rx="14" fill="#0d1f35"/>
+  <text x="312" y="156" font-family="system-ui,sans-serif" font-size="13" fill="#c8dff5">AccessBot supports keyboard navigation, font zoom,</text>
+  <text x="312" y="176" font-family="system-ui,sans-serif" font-size="13" fill="#c8dff5">four colour themes, and adjustable letter spacing.</text>
+  <text x="312" y="196" font-family="system-ui,sans-serif" font-size="13" fill="#7ca3c8">Would you like me to walk you through any of those?</text>
+
+  <!-- FAILED user bubble — red border + inline retry -->
+  <rect x="600" y="228" width="520" height="88" rx="14" fill="#0f3b30" stroke="#7b2020" stroke-width="2"/>
+  <!-- subtle red gradient overlay -->
+  <rect x="600" y="228" width="520" height="88" rx="14" fill="url(#redgrad)" opacity="0.18"/>
+  <defs>
+    <linearGradient id="redgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f3b30"/>
+      <stop offset="100%" stop-color="#780000"/>
+    </linearGradient>
+  </defs>
+  <text x="860" y="258" font-family="system-ui,sans-serif" font-size="13" fill="#c8fff5" text-anchor="middle">Can you give me more detail on the high-contrast theme?</text>
+  <!-- retry button inside bubble -->
+  <rect x="619" y="272" width="482" height="30" rx="8" fill="transparent" stroke="#7b2020" stroke-width="1"/>
+  <text x="860" y="292" font-family="system-ui,sans-serif" font-size="12" fill="#f87171" text-anchor="middle">🔄 Retry</text>
+
+  <!-- error bubble below -->
+  <rect x="292" y="336" width="520" height="52" rx="12" fill="#1a0808" stroke="#7b2020" stroke-width="1"/>
+  <text x="318" y="360" font-family="system-ui,sans-serif" font-size="13" fill="#f87171">⚠️</text>
+  <text x="346" y="360" font-family="system-ui,sans-serif" font-size="13" fill="#f87171">Network error — could not reach the server.</text>
+
+  <!-- annotation arrow + label -->
+  <line x1="860" y1="287" x2="860" y2="340" stroke="#f87171" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+  <circle cx="860" cy="287" r="4" fill="#f87171" opacity="0.8"/>
+
+  <text x="920" y="422" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#00d4aa">← Retry button directly on the failed message</text>
+  <text x="920" y="442" font-family="system-ui,sans-serif" font-size="12" fill="#7ca3c8">No need to retype — click to replay the same request</text>
+
+  <!-- input bar -->
+  <rect x="260" y="480" width="940" height="80" fill="#0a1628"/>
+  <rect x="292" y="494" width="820" height="44" rx="10" fill="#0d1f35" stroke="#1b3650" stroke-width="1"/>
+  <text x="316" y="521" font-family="system-ui,sans-serif" font-size="13" fill="#4a6a8a">Type a message…</text>
+  <rect x="1130" y="494" width="44" height="44" rx="10" fill="#00d4aa"/>
+  <text x="1152" y="521" font-family="system-ui,sans-serif" font-size="18" fill="#060e1c" text-anchor="middle">➤</text>
+
+  <!-- placeholder label -->
+  <rect x="310" y="400" width="460" height="56" rx="10" fill="#0a1628" stroke="#1b3650" stroke-width="1" stroke-dasharray="5,4"/>
+  <text x="540" y="426" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#4a6a8a" text-anchor="middle">📸 Replace with real screenshot</text>
+  <text x="540" y="445" font-family="system-ui,sans-serif" font-size="11" fill="#2a4a6a" text-anchor="middle">img/retry-demo.png — Retry button on failed message</text>
+</svg>

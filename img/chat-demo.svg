@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <rect width="1200" height="720" fill="#060e1c"/>
+  <!-- sidebar -->
+  <rect x="0" y="0" width="260" height="720" fill="#0a1628"/>
+  <rect x="0" y="0" width="260" height="1" fill="#1b3650"/>
+  <text x="20" y="36" font-family="system-ui,sans-serif" font-size="15" font-weight="700" fill="#00d4aa">AccessBot</text>
+  <rect x="16" y="52" width="228" height="36" rx="8" fill="#0f2240"/>
+  <text x="36" y="75" font-family="system-ui,sans-serif" font-size="13" fill="#7ca3c8">+ New Chat</text>
+  <rect x="16" y="100" width="228" height="28" rx="6" fill="#0d1f35"/>
+  <text x="28" y="118" font-family="system-ui,sans-serif" font-size="12" fill="#c8dff5">Monday check-in follow-up</text>
+  <rect x="16" y="134" width="228" height="28" rx="6" fill="#0a1628"/>
+  <text x="28" y="152" font-family="system-ui,sans-serif" font-size="12" fill="#7ca3c8">Breathing exercise tips</text>
+  <rect x="16" y="168" width="228" height="28" rx="6" fill="#0a1628"/>
+  <text x="28" y="186" font-family="system-ui,sans-serif" font-size="12" fill="#7ca3c8">Accessibility settings help</text>
+  <!-- main chat area -->
+  <rect x="260" y="0" width="940" height="720" fill="#0d1a2d"/>
+  <!-- top bar -->
+  <rect x="260" y="0" width="940" height="52" fill="#0d1f35"/>
+  <text x="292" y="31" font-family="system-ui,sans-serif" font-size="15" font-weight="600" fill="#e0efff">Monday check-in follow-up</text>
+  <!-- user bubble -->
+  <rect x="660" y="80" width="460" height="52" rx="14" fill="#0f3b30"/>
+  <text x="880" y="111" font-family="system-ui,sans-serif" font-size="13" fill="#c8fff5" text-anchor="middle">How are you feeling today?</text>
+  <!-- bot bubble -->
+  <rect x="292" y="152" width="540" height="80" rx="14" fill="#0d1f35"/>
+  <text x="312" y="178" font-family="system-ui,sans-serif" font-size="13" fill="#c8dff5">I'm doing well, thank you for asking! Based on your</text>
+  <text x="312" y="198" font-family="system-ui,sans-serif" font-size="13" fill="#c8dff5">recent check-ins, your mood has been improving.</text>
+  <text x="312" y="218" font-family="system-ui,sans-serif" font-size="13" fill="#7ca3c8">Would you like to do a breathing exercise?</text>
+  <!-- user bubble 2 -->
+  <rect x="720" y="252" width="400" height="52" rx="14" fill="#0f3b30"/>
+  <text x="920" y="283" font-family="system-ui,sans-serif" font-size="13" fill="#c8fff5" text-anchor="middle">Yes, walk me through a 4-7-8 exercise</text>
+  <!-- bot bubble 2 -->
+  <rect x="292" y="324" width="560" height="112" rx="14" fill="#0d1f35"/>
+  <text x="312" y="350" font-family="system-ui,sans-serif" font-size="13" fill="#c8dff5">Sure! Here's the 4-7-8 breathing technique:</text>
+  <text x="312" y="374" font-family="system-ui,sans-serif" font-size="13" fill="#c8dff5">1. Inhale quietly through your nose for 4 seconds</text>
+  <text x="312" y="394" font-family="system-ui,sans-serif" font-size="13" fill="#c8dff5">2. Hold your breath for 7 seconds</text>
+  <text x="312" y="414" font-family="system-ui,sans-serif" font-size="13" fill="#c8dff5">3. Exhale completely for 8 seconds</text>
+  <!-- suggestion chips -->
+  <rect x="292" y="456" width="170" height="34" rx="17" fill="#0a2a20" stroke="#00d4aa" stroke-width="1"/>
+  <text x="377" y="477" font-family="system-ui,sans-serif" font-size="12" fill="#00d4aa" text-anchor="middle">📋 Log your mood</text>
+  <rect x="474" y="456" width="190" height="34" rx="17" fill="#0a2a20" stroke="#00d4aa" stroke-width="1"/>
+  <text x="569" y="477" font-family="system-ui,sans-serif" font-size="12" fill="#00d4aa" text-anchor="middle">🌿 Try a breathing exercise</text>
+  <!-- input bar -->
+  <rect x="260" y="650" width="940" height="70" fill="#0a1628"/>
+  <rect x="292" y="663" width="820" height="44" rx="10" fill="#0d1f35" stroke="#1b3650" stroke-width="1"/>
+  <text x="316" y="690" font-family="system-ui,sans-serif" font-size="13" fill="#4a6a8a">Type a message…</text>
+  <rect x="1130" y="663" width="44" height="44" rx="10" fill="#00d4aa"/>
+  <text x="1152" y="690" font-family="system-ui,sans-serif" font-size="18" fill="#060e1c" text-anchor="middle">➤</text>
+  <!-- placeholder label -->
+  <rect x="380" y="540" width="440" height="80" rx="12" fill="#0a1628" stroke="#1b3650" stroke-width="1" stroke-dasharray="6,4"/>
+  <text x="600" y="575" font-family="system-ui,sans-serif" font-size="14" font-weight="600" fill="#4a6a8a" text-anchor="middle">📸 Replace with real screenshot</text>
+  <text x="600" y="598" font-family="system-ui,sans-serif" font-size="12" fill="#2a4a6a" text-anchor="middle">img/chat-demo.png — Main Chat Interface</text>
+</svg>
