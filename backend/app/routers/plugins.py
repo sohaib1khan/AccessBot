@@ -8,7 +8,7 @@ from uuid import uuid4
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.models.user import User
-from app.models.plugin import UserPlugin
+from app.models.plugin import UserPlugin, UserAnalytics
 from app.plugins.manager import plugin_manager
 from app.plugins.daily_checkin.plugin import daily_checkin_plugin
 from app.plugins.mood_tracker.plugin import mood_tracker_plugin
@@ -37,6 +37,8 @@ class CheckinStatusResponse(BaseModel):
     todays_mood: str | None = None
     todays_label: str | None = None
     todays_note: str | None = None
+    last_checkin_date: str | None = None   # ISO date of the most recent past entry
+    days_since_last: int | None = None     # None = never checked in before
 
 
 class CheckinUpdateRequest(BaseModel):
@@ -196,6 +198,8 @@ async def checkin_status(
 ):
     """Check if the current user has done their daily check-in."""
     from app.plugins.daily_checkin.plugin import MOOD_LABELS
+    from datetime import date, timezone, datetime
+
     entry = daily_checkin_plugin._todays_checkin(current_user.id, db)
     if entry:
         mood = entry.metric_value.get("mood", "")
@@ -206,7 +210,30 @@ async def checkin_status(
             "todays_label": MOOD_LABELS.get(mood, mood),
             "todays_note": entry.metric_value.get("note") or None,
         }
-    return {"checked_in_today": False}
+
+    # Not checked in today — find most recent past entry for the reminder
+    today_start = datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
+    last_entry = (
+        db.query(UserAnalytics)
+        .filter(
+            UserAnalytics.user_id == current_user.id,
+            UserAnalytics.metric_type == "checkin",
+            UserAnalytics.recorded_at < today_start,
+        )
+        .order_by(UserAnalytics.recorded_at.desc())
+        .first()
+    )
+
+    if last_entry:
+        last_date  = last_entry.recorded_at.date()
+        days_since = (date.today() - last_date).days
+        return {
+            "checked_in_today": False,
+            "last_checkin_date": last_date.isoformat(),
+            "days_since_last": days_since,
+        }
+
+    return {"checked_in_today": False, "last_checkin_date": None, "days_since_last": None}
 
 
 @router.post("/checkin")

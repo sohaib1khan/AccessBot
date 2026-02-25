@@ -97,6 +97,7 @@ async function loadTodayStatus() {
                 : '';
             statusEl.innerHTML = `
                 <div class="today-done">
+                    <p class="ci-logged-label">✅ Entry logged today</p>
                     <span class="today-mood-badge">
                         ${MOOD_EMOJI[data.todays_mood] || ''} ${escHtml(data.todays_label || '')}
                     </span>
@@ -109,11 +110,25 @@ async function loadTodayStatus() {
             // Already checked in — hide form by default
             document.getElementById('form-card').classList.add('hidden');
         } else {
+            // Build the context line about the last entry
+            let lastEntryHtml = '';
+            if (data.days_since_last === null || data.days_since_last === undefined) {
+                lastEntryHtml = `<span class="ci-reminder-sub">This would be your first check-in — welcome! 🎉</span>`;
+            } else if (data.days_since_last === 1) {
+                lastEntryHtml = `<span class="ci-reminder-sub">Last entry: yesterday (${formatDateShort(data.last_checkin_date)})</span>`;
+            } else {
+                lastEntryHtml = `<span class="ci-reminder-sub">Last entry: ${formatDateShort(data.last_checkin_date)} — <strong>${data.days_since_last} days ago</strong></span>`;
+            }
+
             statusEl.innerHTML = `
-                <p class="ci-muted">You haven't checked in yet today.</p>
-                <button class="btn btn-primary btn-sm" id="open-form-btn" style="margin-top:10px;">
-                    ＋ Check in now
-                </button>`;
+                <div class="ci-reminder-banner" role="status" aria-live="polite">
+                    <span class="ci-reminder-icon" aria-hidden="true">🔔</span>
+                    <div class="ci-reminder-body">
+                        <p class="ci-reminder-title">No entry yet today</p>
+                        ${lastEntryHtml}
+                    </div>
+                    <button class="btn btn-primary btn-sm" id="open-form-btn">＋ Check in now</button>
+                </div>`;
             document.getElementById('open-form-btn').addEventListener('click', () => {
                 resetForm();
                 document.getElementById('form-card').classList.remove('hidden');
@@ -356,6 +371,14 @@ function formatDate(dateStr) {
     const d = new Date(dateStr + 'T12:00:00');
     return d.toLocaleDateString('en-GB', {
         weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+    });
+}
+
+function formatDateShort(dateStr) {
+    // YYYY-MM-DD → "Mon, 23 Feb"
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-GB', {
+        weekday: 'short', day: 'numeric', month: 'short'
     });
 }
 
