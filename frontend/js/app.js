@@ -49,6 +49,9 @@ let isRenaming = false;
 // Last sent payload — used by the retry button
 let lastSendPayload = null;
 
+// DOM id of the last user message bubble — used to mark it failed on error
+let lastUserMsgId = null;
+
 // Smart suggestions — chips dismissed this session won't reappear
 const dismissedSuggestions = new Set();
 
@@ -747,7 +750,7 @@ async function sendMessage() {
     const userContent = capturedImage
         ? JSON.stringify({ text: message, image: capturedImage })
         : message;
-    addMessage(userContent, 'user');
+    lastUserMsgId = addMessage(userContent, 'user');
     messageInput.value = '';
 
     // Hide suggestions when user sends a new message
@@ -776,6 +779,15 @@ async function retrySend() {
 
     // Remove any existing error bubble
     messagesContainer.querySelectorAll('.message.error-bubble').forEach(el => el.remove());
+
+    // Clear failed state from the user message bubble
+    if (lastUserMsgId) {
+        const el = messagesContainer.querySelector(`[data-id="${lastUserMsgId}"]`);
+        if (el) {
+            el.classList.remove('msg-failed');
+            el.querySelectorAll('.msg-retry-btn').forEach(b => b.remove());
+        }
+    }
 
     const loadingId = addMessage('Thinking...', 'loading');
     sendBtn.disabled = true;
@@ -874,15 +886,27 @@ function updateMessageText(id, text) {
 }
 
 function showErrorBubble(detail) {
+    // Mark the last user message bubble as failed with an inline retry button
+    if (lastUserMsgId) {
+        const userEl = messagesContainer.querySelector(`[data-id="${lastUserMsgId}"]`);
+        if (userEl && !userEl.querySelector('.msg-retry-btn')) {
+            userEl.classList.add('msg-failed');
+            const retryBtn = document.createElement('button');
+            retryBtn.className = 'msg-retry-btn';
+            retryBtn.setAttribute('aria-label', 'Retry sending this message');
+            retryBtn.innerHTML = '🔄 Retry';
+            retryBtn.addEventListener('click', retrySend);
+            userEl.appendChild(retryBtn);
+        }
+    }
+
+    // Show error detail below
     const div = document.createElement('div');
     div.className = 'message error-bubble';
     div.setAttribute('role', 'alert');
     div.innerHTML = `
         <span class="error-bubble-icon" aria-hidden="true">⚠️</span>
         <span class="error-bubble-text">${escapeHtml(detail)}</span>
-        <button class="error-retry-btn" onclick="retrySend()" aria-label="Retry sending message">
-            🔄 Retry
-        </button>
     `;
     messagesContainer.appendChild(div);
     div.scrollIntoView({ behavior: 'smooth', block: 'end' });

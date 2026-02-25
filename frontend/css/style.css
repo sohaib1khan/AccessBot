@@ -544,6 +544,25 @@ body {
 /* ── Bubbles ────────────────────────────────────────────────────── */
 .message { max-width: 72%; padding: 14px 18px; border-radius: var(--radius-md); line-height: 1.65; font-size: 1rem; word-wrap: break-word; }
 .message.user { align-self: flex-end; background: var(--bubble-user); color: var(--bubble-user-text); border-bottom-right-radius: 4px; border: 1px solid rgba(0,196,167,0.20); }
+.message.user.msg-failed { border-color: var(--error-border, #7b2020); background: linear-gradient(135deg, var(--bubble-user), rgba(120,20,20,0.18)); }
+.msg-retry-btn {
+    display: block;
+    margin-top: 10px;
+    padding: 6px 14px;
+    width: 100%;
+    text-align: center;
+    background: transparent;
+    color: var(--error, #f87171);
+    border: 1px solid var(--error-border, #7b2020);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: var(--font-base);
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition);
+}
+.msg-retry-btn:hover { background: rgba(120,20,20,0.28); border-color: var(--error, #f87171); }
+.msg-retry-btn:focus-visible { outline: 2px solid var(--error, #f87171); outline-offset: 2px; }
 .message.assistant { align-self: flex-start; background: var(--bubble-bot); color: var(--bubble-bot-text); border-bottom-left-radius: 4px; border: 1px solid var(--border); }
 .message.loading { background: var(--bg-raised); color: var(--text-muted); font-style: italic; align-self: flex-start; border: 1px solid var(--border); }
 
