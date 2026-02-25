@@ -231,3 +231,19 @@
     window.a11y = { set, getPrefs: () => ({ ...prefs }), apply, load };
 
 })();
+
+/* ── Page scroll-to-top button (all pages except chat) ──────────────── */
+(function () {
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('page-scroll-top-btn');
+        if (!btn) return;   // not present on the chat page
+
+        window.addEventListener('scroll', () => {
+            btn.classList.toggle('visible', window.scrollY > 280);
+        }, { passive: true });
+
+        btn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+})();

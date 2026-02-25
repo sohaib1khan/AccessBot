@@ -197,6 +197,15 @@ function setupEventListeners() {
     
     // Send message
     sendBtn.addEventListener('click', sendMessage);
+
+    // Scroll-to-top button
+    const scrollTopBtn = document.getElementById('scroll-top-btn');
+    messagesContainer.addEventListener('scroll', () => {
+        scrollTopBtn.hidden = messagesContainer.scrollTop < 300;
+    }, { passive: true });
+    scrollTopBtn.addEventListener('click', () => {
+        messagesContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    });
     
     // Send message on Enter (Shift+Enter for new line)
     messageInput.addEventListener('keydown', (e) => {

@@ -536,6 +536,65 @@ body {
 /* ── Main chat ──────────────────────────────────────────────────── */
 .chat-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; position: relative; }
 
+/* ── Scroll-to-top button ───────────────────────────────────────────────── */
+.scroll-top-btn {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    z-index: 50;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--bg-card, #0d1f35);
+    color: var(--accent, #00d4aa);
+    border: 1px solid var(--border-bright, #1b3650);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+    transition: background var(--transition), transform var(--transition), opacity var(--transition);
+    opacity: 0.85;
+}
+.scroll-top-btn:hover  { background: var(--bg-raised); transform: translateY(-2px); opacity: 1; }
+.scroll-top-btn:active { transform: translateY(0); }
+.scroll-top-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.scroll-top-btn[hidden] { display: none; }
+
+/* ── Page-level scroll-to-top (fixed, all non-chat pages) ────────────── */
+.page-scroll-top-btn {
+    position: fixed;
+    bottom: 88px;          /* sit above the HelpBot trigger */
+    right: 24px;
+    z-index: 9970;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg-card, #0d1f35);
+    color: var(--accent, #00d4aa);
+    border: 1px solid var(--border-bright, #1b3650);
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s;
+}
+.page-scroll-top-btn.visible {
+    opacity: 0.9;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+.page-scroll-top-btn:hover  { background: var(--bg-raised); opacity: 1; transform: translateY(-2px); }
+.page-scroll-top-btn:active { transform: translateY(0); }
+.page-scroll-top-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
 .messages::-webkit-scrollbar { width: 5px; }
 .messages::-webkit-scrollbar-track { background: transparent; }
