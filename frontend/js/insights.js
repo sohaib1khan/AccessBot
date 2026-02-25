@@ -199,7 +199,7 @@
             const li   = document.createElement('li');
             li.setAttribute('role', 'listitem');
             li.innerHTML = `
-                <span class="week-date">${w.week_start}</span>
+                <span class="week-date">${fmtDate(w.week_start)}</span>
                 <span class="week-emoji" aria-hidden="true">${w.dominant_emoji || '—'}</span>
                 <span class="week-label">${w.dominant_mood || 'No data'}</span>
                 <span class="week-count" aria-label="${w.checkin_count} check-ins">${w.checkin_count}×</span>
@@ -211,6 +211,15 @@
         });
     }
 
+    // ── Date formatter ("2026-02-25" → "Feb 25, 2026") ─────────────────────────
+    function fmtDate(str) {
+        if (!str) return '—';
+        // Parse as local date to avoid UTC-shift (append T00:00)
+        const d = new Date(str.includes('T') ? str : str + 'T00:00');
+        if (isNaN(d)) return str;
+        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
     // ── Populate stat cards ───────────────────────────────────────────────────
     function populateStats(data) {
         document.getElementById('stat-streak').textContent =
@@ -220,11 +229,11 @@
         document.getElementById('stat-messages').textContent =
             data.total_messages.toLocaleString();
         document.getElementById('stat-since').textContent =
-            data.member_since !== 'unknown' ? data.member_since : '—';
+            data.member_since !== 'unknown' ? fmtDate(data.member_since) : '—';
 
         if (data.streak.last_checkin) {
             document.getElementById('last-checkin-note').textContent =
-                `Last check-in: ${data.streak.last_checkin}`;
+                `Last check-in: ${fmtDate(data.streak.last_checkin)}`;
         }
     }
 

@@ -32,6 +32,9 @@ class UserAISettings(Base):
     tts_voice = Column(String(20), default="nova")  # alloy|echo|fable|onyx|nova|shimmer
     voice_enabled = Column(Boolean, default=False)  # auto-speak AI replies
 
+    # Vision / image parsing
+    vision_enabled = Column(Boolean, default=False)  # pass images to vision-capable LLMs
+
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     def __repr__(self):

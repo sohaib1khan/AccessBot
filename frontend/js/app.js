@@ -43,6 +43,9 @@ let pendingImage = null;
 let selectMode = false;
 const selectedConvIds = new Set();
 
+// Rename-in-progress guard — prevents live sync from wiping the rename input
+let isRenaming = false;
+
 // Last sent payload — used by the retry button
 let lastSendPayload = null;
 
@@ -360,6 +363,9 @@ function closeAllConvMenus() {
 }
 
 function startRename(li, id, titleSpan) {
+    if (isRenaming) return; // prevent double-open
+    isRenaming = true;
+
     const current = titleSpan.textContent;
     const input = document.createElement('input');
     input.type = 'text';
@@ -370,24 +376,43 @@ function startRename(li, id, titleSpan) {
     input.focus();
     input.select();
 
-    const commit = async () => {
-        const newTitle = input.value.trim() || current;
-        input.replaceWith(titleSpan);
+    let committed = false;
+
+    const commit = async (save) => {
+        if (committed) return;
+        committed = true;
+        isRenaming = false;
+
+        const newTitle = (save ? input.value.trim() : '') || current;
+
+        // Restore span regardless of outcome
+        if (input.parentNode) input.replaceWith(titleSpan);
         titleSpan.textContent = newTitle;
-        if (newTitle === current) return;
+
+        if (!save || newTitle === current) return;
+
         try {
-            await apiFetch(`${API_URL}/chat/conversations/${id}`, {
+            const res = await apiFetch(`${API_URL}/chat/conversations/${id}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title: newTitle })
             });
-        } catch (err) { console.error('Rename failed', err); }
+            if (!res.ok) {
+                // Revert title in UI if backend rejected it
+                titleSpan.textContent = current;
+                li.setAttribute('aria-label', `Conversation: ${current}`);
+            } else {
+                li.setAttribute('aria-label', `Conversation: ${newTitle}`);
+            }
+        } catch (err) {
+            titleSpan.textContent = current;
+        }
     };
 
-    input.addEventListener('blur', commit);
+    input.addEventListener('blur', () => commit(true));
     input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-        if (e.key === 'Escape') { input.value = current; input.blur(); }
+        if (e.key === 'Enter')  { e.preventDefault(); commit(true); }
+        if (e.key === 'Escape') { e.preventDefault(); commit(false); }
     });
 }
 
@@ -901,6 +926,8 @@ function startLiveSync() {
     stopLiveSync();
     liveSyncTimer = setInterval(async () => {
         if (!authToken || document.getElementById('chat-container').classList.contains('hidden')) return;
+        // Don't re-render the sidebar while the user is typing a rename — it would destroy the input
+        if (isRenaming) return;
 
         const sidebarSearch = document.getElementById('sidebar-search');
         const searchActive = sidebarSearch && sidebarSearch.value.trim().length >= 2;
@@ -1260,6 +1287,7 @@ function removeMessage(id) {
 
 // UI Functions
 function showAuth() {
+    document.documentElement.classList.remove('is-authed', 'not-authed');
     authContainer.classList.remove('hidden');
     chatContainer.classList.add('hidden');
     stopLiveSync();
@@ -1271,6 +1299,7 @@ function showAuth() {
 }
 
 function showChat() {
+    document.documentElement.classList.remove('is-authed', 'not-authed');
     authContainer.classList.add('hidden');
     chatContainer.classList.remove('hidden');
     startLiveSync();

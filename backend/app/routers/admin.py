@@ -25,6 +25,7 @@ class LLMSettings(BaseModel):
     auth_type: str = "bearer"
     custom_headers: Dict[str, str] | None = None
     extra_params: Dict[str, Any] | None = None
+    vision_enabled: bool = False
 
 class LLMSettingsResponse(BaseModel):
     provider_name: str
@@ -36,6 +37,7 @@ class LLMSettingsResponse(BaseModel):
     auth_type: str
     custom_headers: Dict[str, str] | None
     extra_params: Dict[str, Any] | None
+    vision_enabled: bool
     # Don't expose API key in response
 
 @router.get("/settings", response_model=LLMSettingsResponse)
@@ -70,7 +72,8 @@ async def get_settings(
         "max_tokens": settings.max_tokens,
         "auth_type": settings.auth_type,
         "custom_headers": settings.custom_headers,
-        "extra_params": settings.extra_params
+        "extra_params": settings.extra_params,
+        "vision_enabled": settings.vision_enabled or False,
     }
 
 @router.post("/settings")
@@ -94,6 +97,7 @@ async def update_settings(
         settings.auth_type = settings_data.auth_type
         settings.custom_headers = settings_data.custom_headers
         settings.extra_params = settings_data.extra_params
+        settings.vision_enabled = settings_data.vision_enabled
         if settings_data.api_key:
             settings.api_key = settings_data.api_key
     else:
@@ -109,7 +113,8 @@ async def update_settings(
             max_tokens=settings_data.max_tokens,
             auth_type=settings_data.auth_type,
             custom_headers=settings_data.custom_headers,
-            extra_params=settings_data.extra_params
+            extra_params=settings_data.extra_params,
+            vision_enabled=settings_data.vision_enabled,
         )
         db.add(settings)
 

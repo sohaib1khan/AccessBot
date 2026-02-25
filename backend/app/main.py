@@ -28,6 +28,21 @@ plugin_manager.register(recharge_plugin)
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Safe column migrations (add new columns to existing tables without breaking anything)
+def _run_migrations():
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        # vision_enabled added in v2
+        conn.execute(text(
+            "ALTER TABLE user_ai_settings ADD COLUMN IF NOT EXISTS vision_enabled BOOLEAN DEFAULT false"
+        ))
+        conn.commit()
+
+try:
+    _run_migrations()
+except Exception:
+    pass  # Table may not exist yet (first run) — create_all above will handle it
+
 # Initialize FastAPI app
 app = FastAPI(
     title="AccessBot API",

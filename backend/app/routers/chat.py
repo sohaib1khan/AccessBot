@@ -30,6 +30,9 @@ class ChatResponse(BaseModel):
     message: str
     role: str = "assistant"
 
+class RenameRequest(BaseModel):
+    title: str
+
 class ConversationSummary(BaseModel):
     id: int
     title: str | None
@@ -125,22 +128,39 @@ async def send_message(
         Message.conversation_id == conversation.id
     ).order_by(Message.created_at).all()
     
-    # Format messages for AI — strip image payloads to text only (local LLMs are text-only)
+    # Get AI settings once so we know if vision is enabled
+    ai_settings = await ai_router.get_user_settings(current_user.id, db)
+    vision_enabled = ai_settings.get("vision_enabled", False)
+    api_format = ai_settings.get("api_format", "openai")
+
+    # Format messages for AI
+    # When vision is enabled and the message has an image, build a multipart content array
+    # (OpenAI vision format, also supported by LM Studio vision models)
     import json as _json
-    def _ai_text(content: str) -> str:
+    def _build_ai_message(role: str, content: str):
+        """Returns a message dict, using multipart content for user messages with images if vision is on."""
         try:
             parsed = _json.loads(content)
             if isinstance(parsed, dict) and "text" in parsed:
-                img_note = " [User attached an image]" if parsed.get("image") else ""
-                return (parsed["text"] or "") + img_note
+                text = parsed.get("text") or ""
+                image = parsed.get("image") or ""
+                if image and vision_enabled and api_format in ("openai", "ollama"):
+                    # OpenAI vision multipart format (also used by LM Studio, Ollama)
+                    return {
+                        "role": role,
+                        "content": [
+                            {"type": "text", "text": text},
+                            {"type": "image_url", "image_url": {"url": image}},
+                        ]
+                    }
+                # Vision disabled or unsupported format — fall back to text with note
+                img_note = " [User attached an image — vision is not enabled for this model]" if image else ""
+                return {"role": role, "content": text + img_note}
         except Exception:
             pass
-        return content
+        return {"role": role, "content": content}
 
-    ai_messages = [
-        {"role": msg.role, "content": _ai_text(msg.content)}
-        for msg in messages
-    ]
+    ai_messages = [_build_ai_message(msg.role, msg.content) for msg in messages]
     
     # Prepend plugin context as a system message (if any plugins have context)
     plugin_context = await plugin_manager.collect_ai_context(current_user.id, db)
@@ -293,7 +313,7 @@ async def bulk_delete_conversations(
 @router.patch("/conversations/{conversation_id}")
 async def rename_conversation(
     conversation_id: int,
-    data: dict,
+    data: RenameRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -304,7 +324,7 @@ async def rename_conversation(
     ).first()
     if not conversation:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
-    new_title = (data.get("title") or "").strip()
+    new_title = data.title.strip()
     if not new_title:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Title cannot be empty")
     conversation.title = new_title[:100]

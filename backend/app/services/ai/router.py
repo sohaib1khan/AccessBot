@@ -42,7 +42,8 @@ class AIRouter:
             "max_tokens": settings.max_tokens,
             "auth_type": settings.auth_type,
             "custom_headers": settings.custom_headers or {},
-            "extra_params": settings.extra_params or {}
+            "extra_params": settings.extra_params or {},
+            "vision_enabled": settings.vision_enabled or False,
         }
     
     async def chat(self, user_id: int, messages: List[Dict[str, str]], db: Session) -> str:

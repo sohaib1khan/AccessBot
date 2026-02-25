@@ -409,6 +409,7 @@ async function loadCurrentSettings() {
             document.getElementById('temperature').value = settings.temperature;
             document.getElementById('max_tokens').value = settings.max_tokens;
             document.getElementById('auth_type').value = settings.auth_type;
+            document.getElementById('vision_enabled').checked = settings.vision_enabled || false;
         }
     } catch (error) {
         console.error('Failed to load settings:', error);
@@ -428,6 +429,7 @@ settingsForm.addEventListener('submit', async (e) => {
         temperature: parseFloat(document.getElementById('temperature').value),
         max_tokens: parseInt(document.getElementById('max_tokens').value),
         auth_type: document.getElementById('auth_type').value,
+        vision_enabled: document.getElementById('vision_enabled').checked,
         custom_headers: {},
         extra_params: {}
     };
