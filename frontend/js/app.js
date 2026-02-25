@@ -660,7 +660,17 @@ async function handleLogin(e) {
             localStorage.setItem('authToken', authToken);
             showChat();
             loadUserInfo();
-            loadConversations();
+            // Restore the last active conversation after the sidebar loads —
+            // without this the messages area stays blank until the user clicks
+            // a conversation manually (same pattern used in DOMContentLoaded).
+            loadConversations().then(() => {
+                const savedId = parseInt(localStorage.getItem('activeConversationId'));
+                if (savedId) {
+                    loadConversation(savedId);
+                } else {
+                    messagesContainer.innerHTML = '<div class="welcome-message"><h2>Welcome to AccessBot 👋</h2><p>Start a new conversation using the <strong>+ New Chat</strong> button, or just type a message below.</p></div>';
+                }
+            });
             checkDailyCheckin();
         } else {
             showError(data.detail || 'Login failed');
@@ -1311,7 +1321,9 @@ function removeMessage(id) {
 
 // UI Functions
 function showAuth() {
-    document.documentElement.classList.remove('is-authed', 'not-authed');
+    // Keep the FOUC guard class in sync so CSS hides the right container immediately
+    document.documentElement.classList.remove('is-authed');
+    document.documentElement.classList.add('not-authed');
     authContainer.classList.remove('hidden');
     chatContainer.classList.add('hidden');
     stopLiveSync();
@@ -1323,7 +1335,9 @@ function showAuth() {
 }
 
 function showChat() {
-    document.documentElement.classList.remove('is-authed', 'not-authed');
+    // Keep the FOUC guard class in sync so CSS hides the right container immediately
+    document.documentElement.classList.remove('not-authed');
+    document.documentElement.classList.add('is-authed');
     authContainer.classList.add('hidden');
     chatContainer.classList.remove('hidden');
     startLiveSync();
