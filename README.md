@@ -41,10 +41,6 @@ locally on your own hardware with no dependency on external services.
 
 ## Demo
 
-> **Screenshots and GIFs live in the [`img/`](img/) folder.**
-> The placeholders below are SVG mockups — replace each file with a real
-> screenshot or screen recording when you are ready.
-
 ### Main Chat Interface
 
 ![AccessBot main chat interface showing a conversation with smart suggestion chips](img/chat-demo.svg)
@@ -81,16 +77,6 @@ font size and letter spacing without reloading.
 
 When the LLM fails to respond, the original message turns red and a
 **🔄 Retry** button appears directly inside it — no need to retype.
-
----
-
-> **To add your own screenshots:**
-> 1. Take a screenshot or record a GIF of each screen.
-> 2. Drop the file into the `img/` folder.
-> 3. Update the filename in the Markdown above (e.g. change
->    `img/chat-demo.svg` → `img/chat-demo.png`).
-
----
 
 ## Architecture Overview
 
