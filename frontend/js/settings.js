@@ -47,8 +47,18 @@ async function loadCurrentUserInfo() {
         const user = await res.json();
         const unInput = document.getElementById('acct-username');
         const emInput = document.getElementById('acct-email');
+        const sessionMeta = document.getElementById('account-session-meta');
         if (unInput) unInput.value = user.username || '';
         if (emInput) emInput.value = user.email   || '';
+        if (sessionMeta) {
+            const lastLogin = user.last_login_at
+                ? `${new Date(user.last_login_at).toLocaleString()}${user.last_login_ip ? ` (IP: ${user.last_login_ip})` : ''}`
+                : 'Never';
+            const lastLogout = user.last_logout_at
+                ? `${new Date(user.last_logout_at).toLocaleString()}${user.last_logout_ip ? ` (IP: ${user.last_logout_ip})` : ''}`
+                : 'Never';
+            sessionMeta.textContent = `Last login: ${lastLogin} • Last logout: ${lastLogout}`;
+        }
     } catch { /* silent */ }
 }
 
@@ -136,13 +146,15 @@ function renderUsers(users) {
 
     wrap.innerHTML = `
         <table class="users-table" role="table" aria-label="User accounts">
-            <thead><tr><th>ID</th><th>Username</th><th>Email</th><th></th></tr></thead>
+            <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Last Login</th><th>Last Logout</th><th></th></tr></thead>
             <tbody>
                 ${users.map(u => `
                     <tr data-uid="${u.id}">
                         <td>${u.id}</td>
                         <td>${escHtml(u.username)}${u.id === currentUserId ? ' <span class="you-badge">(you)</span>' : ''}</td>
                         <td>${escHtml(u.email || '—')}</td>
+                        <td>${escHtml(u.last_login_at ? new Date(u.last_login_at).toLocaleString() : '—')}${u.last_login_ip ? `<br><small>${escHtml(u.last_login_ip)}</small>` : ''}</td>
+                        <td>${escHtml(u.last_logout_at ? new Date(u.last_logout_at).toLocaleString() : '—')}${u.last_logout_ip ? `<br><small>${escHtml(u.last_logout_ip)}</small>` : ''}</td>
                         <td>${u.id !== currentUserId
                             ? `<button class="btn btn-danger btn-sm delete-user-btn" data-uid="${u.id}" aria-label="Delete ${escHtml(u.username)}">Delete</button>`
                             : ''}</td>
@@ -478,7 +490,15 @@ testBtn.addEventListener('click', async () => {
 });
 
 // Logout
-logoutBtn.addEventListener('click', () => {
+logoutBtn.addEventListener('click', async () => {
+    try {
+        await apiFetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+    } catch {
+        // best-effort only
+    }
     localStorage.removeItem('authToken');
     localStorage.removeItem('activeConversationId');
     window.location.href = '/';

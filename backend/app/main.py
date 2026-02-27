@@ -36,6 +36,19 @@ def _run_migrations():
         conn.execute(text(
             "ALTER TABLE user_ai_settings ADD COLUMN IF NOT EXISTS vision_enabled BOOLEAN DEFAULT false"
         ))
+        # auth audit fields
+        conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ"
+        ))
+        conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_logout_at TIMESTAMPTZ"
+        ))
+        conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(64)"
+        ))
+        conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_logout_ip VARCHAR(64)"
+        ))
         conn.commit()
 
 try:

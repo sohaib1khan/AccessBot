@@ -721,7 +721,15 @@ async function handleRegister(e) {
     }
 }
 
-function handleLogout() {
+async function handleLogout() {
+    try {
+        await apiFetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+    } catch (e) {
+        // best-effort only
+    }
     authToken = null;
     currentConversationId = null;
     localStorage.removeItem('authToken');

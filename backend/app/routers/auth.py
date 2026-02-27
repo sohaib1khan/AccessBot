@@ -1,16 +1,18 @@
 # backend/app/routers/auth.py
 from app.core.auth import get_current_user
-from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import timedelta, datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional, List
+import logging
 from app.core.database import get_db
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.models.user import User
 from app.config import settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # ── Request / Response models ─────────────────────────────────────
 
@@ -31,6 +33,10 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: Optional[str]
+    last_login_at: Optional[datetime] = None
+    last_logout_at: Optional[datetime] = None
+    last_login_ip: Optional[str] = None
+    last_logout_ip: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -64,6 +70,12 @@ def _create_user(db: Session, username: str, password: str, email: Optional[str]
     db.refresh(user)
     return user
 
+def _request_meta(request: Request) -> tuple[str, str]:
+    forwarded_for = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    client_ip = forwarded_for or (request.client.host if request.client else "unknown")
+    user_agent = request.headers.get("user-agent", "unknown")
+    return client_ip, user_agent
+
 # ── Public: setup status ──────────────────────────────────────────
 
 @router.get("/setup-status")
@@ -93,18 +105,70 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
 # ── Public: login ─────────────────────────────────────────────────
 
 @router.post("/login", response_model=Token)
-async def login(credentials: UserLogin, db: Session = Depends(get_db)):
+async def login(credentials: UserLogin, request: Request, db: Session = Depends(get_db)):
     """Login and get access token"""
+    client_ip, user_agent = _request_meta(request)
     user = db.query(User).filter(User.username == credentials.username).first()
     if not user or not verify_password(credentials.password, user.password_hash):
+        logger.warning(
+            "AUTH_LOGIN_FAILED username=%s ip=%s user_agent=%s reason=bad_credentials",
+            credentials.username,
+            client_ip,
+            user_agent,
+        )
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect username or password")
     if not user.is_active:
+        logger.warning(
+            "AUTH_LOGIN_BLOCKED user_id=%s username=%s ip=%s user_agent=%s reason=inactive",
+            user.id,
+            user.username,
+            client_ip,
+            user_agent,
+        )
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Inactive user")
+
+    user.last_login_at = datetime.now(timezone.utc)
+    user.last_login_ip = client_ip
+    db.commit()
+
+    logger.info(
+        "AUTH_LOGIN_SUCCESS user_id=%s username=%s email=%s ip=%s user_agent=%s last_login_at=%s",
+        user.id,
+        user.username,
+        user.email or "",
+        client_ip,
+        user_agent,
+        user.last_login_at.isoformat() if user.last_login_at else "",
+    )
+
     access_token = create_access_token(
         data={"sub": str(user.id)},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/logout")
+async def logout(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Best-effort logout audit endpoint (JWT remains stateless)."""
+    client_ip, user_agent = _request_meta(request)
+    current_user.last_logout_at = datetime.now(timezone.utc)
+    current_user.last_logout_ip = client_ip
+    db.commit()
+
+    logger.info(
+        "AUTH_LOGOUT user_id=%s username=%s email=%s ip=%s user_agent=%s last_logout_at=%s",
+        current_user.id,
+        current_user.username,
+        current_user.email or "",
+        client_ip,
+        user_agent,
+        current_user.last_logout_at.isoformat() if current_user.last_logout_at else "",
+    )
+    return {"ok": True}
 
 # ── Authenticated: current user ───────────────────────────────────
 
