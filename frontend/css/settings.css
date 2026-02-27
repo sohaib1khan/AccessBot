@@ -34,6 +34,12 @@ body {
     text-shadow: 0 0 20px rgba(0,196,167,0.3);
 }
 
+.settings-header .header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 .settings-card {
     background: var(--bg-card, #0f2240);
     border: 1px solid var(--border-bright, #2a5070);
@@ -257,9 +263,27 @@ body {
     body { padding: 16px 12px 40px; }
     .settings-card { padding: 20px 18px; }
     .settings-header { flex-direction: column; align-items: flex-start; }
+    .settings-header h1 { font-size: 1.55rem; }
+    .settings-header .header-actions { width: 100%; gap: 8px; }
+    .settings-header .header-actions .btn {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 0;
+        padding: 10px 12px;
+        min-height: 46px;
+        font-size: 0.9rem;
+        white-space: normal;
+        text-align: center;
+    }
     .templates-grid { grid-template-columns: 1fr 1fr; }
     .save-bar { flex-direction: column; }
     .save-bar .btn { width: 100%; }
+}
+
+@media (max-width: 420px) {
+    .settings-header .header-actions .btn {
+        flex: 1 1 100%;
+        width: 100%;
+    }
 }
 
 /* ── User management table ──────────────────────────────── */

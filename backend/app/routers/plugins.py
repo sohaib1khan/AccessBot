@@ -13,6 +13,7 @@ from app.plugins.manager import plugin_manager
 from app.plugins.daily_checkin.plugin import daily_checkin_plugin
 from app.plugins.mood_tracker.plugin import mood_tracker_plugin
 from app.plugins.recharge.plugin import recharge_plugin
+from datetime import datetime, timezone, timedelta
 
 router = APIRouter()
 
@@ -98,7 +99,94 @@ class RechargeCustomItemsResponse(BaseModel):
     items: list[RechargeItemResponse]
 
 
+class UrgentChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class UrgentChatRequest(BaseModel):
+    message: str
+    history: list[UrgentChatMessage] = []
+
+
+class GoalCreateRequest(BaseModel):
+    title: str
+
+
+class GoalUpdateRequest(BaseModel):
+    title: str
+
+
+class TaskBreakdownRequest(BaseModel):
+    task: str
+
+
 VALID_RECHARGE_TYPES = {"article", "video", "audio"}
+
+
+def _goal_row(user_id: int, db: Session) -> UserPlugin:
+    row = db.query(UserPlugin).filter(
+        UserPlugin.user_id == user_id,
+        UserPlugin.plugin_name == "goal_streaks"
+    ).first()
+    if not row:
+        row = UserPlugin(user_id=user_id, plugin_name="goal_streaks", enabled=True, settings={})
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+    return row
+
+
+def _goal_settings(row: UserPlugin) -> dict:
+    return row.settings if isinstance(row.settings, dict) else {}
+
+
+def _goal_save(row: UserPlugin, settings: dict, db: Session):
+    row.settings = settings
+    flag_modified(row, "settings")
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+
+
+def _goal_streak(completions: list[dict], goal_id: str) -> int:
+    dates = {
+        c.get("date") for c in completions
+        if c.get("goal_id") == goal_id and isinstance(c.get("date"), str)
+    }
+    if not dates:
+        return 0
+    streak = 0
+    day = datetime.now(timezone.utc).date()
+    while day.isoformat() in dates:
+        streak += 1
+        day = day - timedelta(days=1)
+    return streak
+
+
+def _task_row(user_id: int, db: Session) -> UserPlugin:
+    row = db.query(UserPlugin).filter(
+        UserPlugin.user_id == user_id,
+        UserPlugin.plugin_name == "task_breakdown"
+    ).first()
+    if not row:
+        row = UserPlugin(user_id=user_id, plugin_name="task_breakdown", enabled=True, settings={})
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+    return row
+
+
+def _task_settings(row: UserPlugin) -> dict:
+    return row.settings if isinstance(row.settings, dict) else {}
+
+
+def _task_save(row: UserPlugin, settings: dict, db: Session):
+    row.settings = settings
+    flag_modified(row, "settings")
+    db.add(row)
+    db.commit()
+    db.refresh(row)
 
 
 def _recharge_row(user_id: int, db: Session) -> UserPlugin:
@@ -569,3 +657,260 @@ async def recharge_delete_custom_item(
 
     _save_custom_items(row, remaining, db)
     return {"deleted": item_id}
+
+
+@router.post("/urgent/session")
+async def urgent_session_chat(
+    data: UrgentChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not plugin_manager.is_enabled("crisis_support", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Urgent Support Chat")
+
+    if not data.message or not data.message.strip():
+        raise HTTPException(status_code=400, detail="message is required")
+
+    from app.services.ai.router import ai_router
+
+    history_msgs = [
+        {"role": m.role, "content": m.content}
+        for m in (data.history or [])
+        if m.role in ("user", "assistant") and isinstance(m.content, str) and m.content.strip()
+    ][-12:]
+
+    system_prompt = (
+        "You are AccessBot Urgent Support mode. Keep the user safe, calm, and supported. "
+        "Use brief, compassionate language. Help break overwhelming problems into tiny next steps. "
+        "Do NOT contact anyone or suggest contacting someone unless user explicitly asks. "
+        "Avoid diagnosis. Focus on grounding, immediate stabilization, and practical actions in the next 10 minutes."
+    )
+
+    ai_messages = [{"role": "system", "content": system_prompt}] + history_msgs + [{"role": "user", "content": data.message.strip()}]
+    reply = await ai_router.chat(current_user.id, ai_messages, db)
+    return {"message": reply}
+
+
+@router.get("/goals")
+async def goals_list(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
+
+    row = _goal_row(current_user.id, db)
+    settings = _goal_settings(row)
+    goals = settings.get("goals", []) if isinstance(settings.get("goals", []), list) else []
+    completions = settings.get("completions", []) if isinstance(settings.get("completions", []), list) else []
+
+    out = []
+    for g in goals:
+        gid = g.get("id", "")
+        out.append({
+            "id": gid,
+            "title": g.get("title", ""),
+            "created_at": g.get("created_at"),
+            "streak": _goal_streak(completions, gid),
+            "completed_today": any(c.get("goal_id") == gid and c.get("date") == datetime.now(timezone.utc).date().isoformat() for c in completions),
+        })
+    return {"goals": out}
+
+
+@router.post("/goals")
+async def goals_add(
+    data: GoalCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
+
+    title = (data.title or "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="title is required")
+
+    row = _goal_row(current_user.id, db)
+    settings = _goal_settings(row)
+    goals = settings.get("goals", []) if isinstance(settings.get("goals", []), list) else []
+    new_goal = {
+        "id": uuid4().hex[:12],
+        "title": title[:140],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    goals.insert(0, new_goal)
+    settings["goals"] = goals
+    settings.setdefault("completions", [])
+    _goal_save(row, settings, db)
+    return new_goal
+
+
+@router.patch("/goals/{goal_id}")
+async def goals_update(
+    goal_id: str,
+    data: GoalUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
+
+    title = (data.title or "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="title is required")
+
+    row = _goal_row(current_user.id, db)
+    settings = _goal_settings(row)
+    goals = settings.get("goals", []) if isinstance(settings.get("goals", []), list) else []
+    for g in goals:
+        if g.get("id") == goal_id:
+            g["title"] = title[:140]
+            settings["goals"] = goals
+            _goal_save(row, settings, db)
+            return g
+    raise HTTPException(status_code=404, detail="Goal not found")
+
+
+@router.delete("/goals/{goal_id}")
+async def goals_delete(
+    goal_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
+
+    row = _goal_row(current_user.id, db)
+    settings = _goal_settings(row)
+    goals = settings.get("goals", []) if isinstance(settings.get("goals", []), list) else []
+    completions = settings.get("completions", []) if isinstance(settings.get("completions", []), list) else []
+    next_goals = [g for g in goals if g.get("id") != goal_id]
+    if len(next_goals) == len(goals):
+        raise HTTPException(status_code=404, detail="Goal not found")
+    settings["goals"] = next_goals
+    settings["completions"] = [c for c in completions if c.get("goal_id") != goal_id]
+    _goal_save(row, settings, db)
+    return {"deleted": goal_id}
+
+
+@router.post("/goals/{goal_id}/complete")
+async def goals_complete_today(
+    goal_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
+
+    row = _goal_row(current_user.id, db)
+    settings = _goal_settings(row)
+    goals = settings.get("goals", []) if isinstance(settings.get("goals", []), list) else []
+    if not any(g.get("id") == goal_id for g in goals):
+        raise HTTPException(status_code=404, detail="Goal not found")
+
+    completions = settings.get("completions", []) if isinstance(settings.get("completions", []), list) else []
+    today = datetime.now(timezone.utc).date().isoformat()
+    completions = [c for c in completions if not (c.get("goal_id") == goal_id and c.get("date") == today)]
+    completions.append({"goal_id": goal_id, "date": today})
+    settings["completions"] = completions
+    _goal_save(row, settings, db)
+    return {"goal_id": goal_id, "date": today, "streak": _goal_streak(completions, goal_id)}
+
+
+@router.delete("/goals/{goal_id}/complete")
+async def goals_uncomplete_today(
+    goal_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
+
+    row = _goal_row(current_user.id, db)
+    settings = _goal_settings(row)
+    completions = settings.get("completions", []) if isinstance(settings.get("completions", []), list) else []
+    today = datetime.now(timezone.utc).date().isoformat()
+    settings["completions"] = [c for c in completions if not (c.get("goal_id") == goal_id and c.get("date") == today)]
+    _goal_save(row, settings, db)
+    return {"goal_id": goal_id, "date": today, "streak": _goal_streak(settings["completions"], goal_id)}
+
+
+@router.post("/task-breakdown/plan")
+async def task_breakdown_plan(
+    data: TaskBreakdownRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not plugin_manager.is_enabled("task_breakdown", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Task Breakdown Coach")
+
+    task = (data.task or "").strip()
+    if not task:
+        raise HTTPException(status_code=400, detail="task is required")
+
+    from app.services.ai.router import ai_router
+    prompt = (
+        "Break this task into 5-8 tiny steps. For each step include: short title, 1 action sentence, and timer minutes. "
+        "Keep tone gentle and practical. Return plain text only.\\n\\nTask: " + task
+    )
+    try:
+        plan = await ai_router.chat(current_user.id, [{"role": "user", "content": prompt}], db)
+        plan_text = plan
+    except Exception:
+        fallback = (
+            "1) Clarify the smallest version of the task (5 min).\\n"
+            "2) Gather what you need in one place (10 min).\\n"
+            "3) Do the first concrete action only (15 min).\\n"
+            "4) Take a short reset break (3 min).\\n"
+            "5) Do the next small action (15 min).\\n"
+            "6) Mark progress and choose next step for later (5 min)."
+        )
+        plan_text = fallback
+
+    row = _task_row(current_user.id, db)
+    settings = _task_settings(row)
+    history = settings.get("history", []) if isinstance(settings.get("history", []), list) else []
+    entry = {
+        "id": uuid4().hex[:12],
+        "task": task[:300],
+        "plan": plan_text,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    history.insert(0, entry)
+    settings["history"] = history[:20]
+    _task_save(row, settings, db)
+    return {"task": task, "plan": plan_text, "entry_id": entry["id"]}
+
+
+@router.get("/task-breakdown/history")
+async def task_breakdown_history(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not plugin_manager.is_enabled("task_breakdown", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Task Breakdown Coach")
+
+    row = _task_row(current_user.id, db)
+    settings = _task_settings(row)
+    history = settings.get("history", []) if isinstance(settings.get("history", []), list) else []
+    return {"history": history[:20]}
+
+
+@router.delete("/task-breakdown/history/{entry_id}")
+async def task_breakdown_delete_history(
+    entry_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not plugin_manager.is_enabled("task_breakdown", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Task Breakdown Coach")
+
+    row = _task_row(current_user.id, db)
+    settings = _task_settings(row)
+    history = settings.get("history", []) if isinstance(settings.get("history", []), list) else []
+    next_history = [h for h in history if h.get("id") != entry_id]
+    if len(next_history) == len(history):
+        raise HTTPException(status_code=404, detail="History item not found")
+    settings["history"] = next_history
+    _task_save(row, settings, db)
+    return {"deleted": entry_id}

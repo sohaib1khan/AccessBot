@@ -38,6 +38,24 @@
             emoji: '⚡',
             desc: 'Motivational articles, videos, audio picks, and quote feed.',
         },
+        taskcoach: {
+            url: '/task-coach.html',
+            label: 'Task Breakdown Coach',
+            emoji: '🧩',
+            desc: 'Break a large task into tiny actions with gentle pacing.',
+        },
+        goals: {
+            url: '/goals.html',
+            label: 'Goal Streaks',
+            emoji: '🎯',
+            desc: 'Create small goals, mark daily completion, and track supportive streaks.',
+        },
+        urgent: {
+            url: '/urgent.html',
+            label: 'Urgent Support Session',
+            emoji: '🆘',
+            desc: 'Separate support chat for urgent moments and step-by-step calming help.',
+        },
         settings: {
             url: '/settings.html',
             label: 'Settings',
@@ -75,6 +93,21 @@
             page: 'recharge',
             patterns: ['recharge', 'motivation', 'motivational', 'inspiration', 'inspire', 'quote', 'quotes', 'video', 'videos', 'watch', 'listen', 'audio', 'podcast'],
             reply: 'The **Motivation & Recharge** page gives you quick uplifting content: articles to read, videos to watch, audio picks to listen to, and a live quote feed.',
+        },
+        {
+            page: 'taskcoach',
+            patterns: ['task coach', 'task breakdown', 'break down task', 'overwhelmed task', 'adhd task', 'micro steps', 'tiny steps', 'step by step plan'],
+            reply: 'The **Task Breakdown Coach** helps turn one overwhelming task into tiny, actionable steps with gentle pacing.',
+        },
+        {
+            page: 'goals',
+            patterns: ['goal', 'goals', 'streak', 'streaks', 'daily goal', 'accountability', 'habit streak'],
+            reply: 'The **Goal Streaks** page lets you track small daily goals with compassionate streaks and easy resets.',
+        },
+        {
+            page: 'urgent',
+            patterns: ['urgent', 'crisis', 'panic', 'i need help now', 'support now', 'overwhelmed now', 'urgent support'],
+            reply: 'The **Urgent Support Session** is a separate chat focused on calming and breaking down what feels urgent right now.',
         },
         {
             page: 'settings',
@@ -121,6 +154,9 @@
     const QUICK_CHIPS = [
         { label: '📋 Check in', query: 'where do I log my mood' },
         { label: '📊 View stats', query: 'show me my insights' },
+        { label: '🧩 Task coach', query: 'open task breakdown coach' },
+        { label: '🎯 Goals', query: 'open goals' },
+        { label: '🆘 Urgent support', query: 'open urgent support' },
         { label: '⚡ Recharge', query: 'open recharge page' },
         { label: '🗂️ Resources', query: 'show resources' },
         { label: '⚙️ Settings', query: 'open settings' },

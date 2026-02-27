@@ -20,10 +20,16 @@ from app.plugins.manager import plugin_manager
 from app.plugins.daily_checkin.plugin import daily_checkin_plugin
 from app.plugins.mood_tracker.plugin import mood_tracker_plugin
 from app.plugins.recharge.plugin import recharge_plugin
+from app.plugins.crisis_support.plugin import crisis_support_plugin
+from app.plugins.goal_streaks.plugin import goal_streaks_plugin
+from app.plugins.task_breakdown.plugin import task_breakdown_plugin
 
 plugin_manager.register(daily_checkin_plugin)
 plugin_manager.register(mood_tracker_plugin)
 plugin_manager.register(recharge_plugin)
+plugin_manager.register(crisis_support_plugin)
+plugin_manager.register(goal_streaks_plugin)
+plugin_manager.register(task_breakdown_plugin)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#060e1c">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>Urgent Support - AccessBot</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/accessibility.css">
+    <link rel="stylesheet" href="css/helpbot.css">
+    <style>
+        #urgent-messages {
+            height: 50vh;
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .urgent-input-row {
+            margin-top: 12px;
+            display: block;
+        }
+        #urgent-input {
+            display: block;
+            box-sizing: border-box;
+            min-height: 52px;
+            width: 100% !important;
+            min-width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-base, #0b1829);
+            border: 2px solid var(--border-bright, #2a5070);
+            border-radius: 8px;
+            color: var(--text-primary, #ddf0ec);
+            font: inherit;
+            resize: vertical;
+        }
+        #urgent-input::placeholder { color: var(--text-muted, #6f9f97); }
+        #urgent-input:focus {
+            outline: 3px solid rgba(0,196,167,0.20);
+            border-color: var(--accent, #00c4a7);
+        }
+        #urgent-send {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <div class="settings-header">
+            <h1>🆘 Urgent Support Session</h1>
+            <div class="header-actions" style="display:flex;gap:10px;flex-wrap:wrap;">
+                <a href="/" class="btn btn-secondary">← Chat</a>
+                <a href="/task-coach.html" class="btn btn-secondary">🧩 Task Coach</a>
+                <a href="/goals.html" class="btn btn-secondary">🎯 Goals</a>
+                <a href="/settings.html" class="btn btn-secondary">⚙️ Settings</a>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <p style="margin-bottom:12px;color:var(--text-secondary)">Separate support chat for overwhelming moments. We’ll focus on calming and tiny next steps.</p>
+            <div id="urgent-disabled" class="message error hidden"></div>
+            <div id="urgent-messages" class="messages"></div>
+            <div class="urgent-input-row">
+                <textarea id="urgent-input" placeholder="Tell me what feels urgent right now..." rows="3"></textarea>
+                <button id="urgent-send" class="btn btn-primary">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/urgent.js"></script>
+    <script src="js/helpbot.js"></script>
+    <script src="js/accessibility.js"></script>
+    <button id="page-scroll-top-btn" class="page-scroll-top-btn" aria-label="Scroll to top" title="Scroll to top">↑</button>
+</body>
+</html>

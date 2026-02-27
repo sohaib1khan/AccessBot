@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#060e1c">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>Goal Streaks - AccessBot</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/accessibility.css">
+    <link rel="stylesheet" href="css/helpbot.css">
+    <style>
+        .goal-add-row { display:flex; gap:10px; align-items:center; margin-bottom:10px; }
+        #goal-title { flex:1; min-height:44px; padding:10px 12px; border:2px solid var(--border-bright, #2a5070); border-radius:8px; background:var(--bg-base, #0b1829); color:var(--text-primary, #ddf0ec); }
+        #goal-title::placeholder { color: var(--text-muted, #6f9f97); }
+        #goal-title:focus { outline: 3px solid rgba(0,196,167,0.20); border-color: var(--accent, #00c4a7); }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <div class="settings-header">
+            <h1>🎯 Goal Streaks</h1>
+            <div class="header-actions" style="display:flex;gap:10px;flex-wrap:wrap;">
+                <a href="/" class="btn btn-secondary">← Chat</a>
+                <a href="/task-coach.html" class="btn btn-secondary">🧩 Task Coach</a>
+                <a href="/urgent.html" class="btn btn-secondary">🆘 Urgent Support</a>
+                <a href="/settings.html" class="btn btn-secondary">⚙️ Settings</a>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <p style="margin-bottom:12px;color:var(--text-secondary)">Track small goals with gentle streaks and no-pressure resets.</p>
+            <div id="goals-disabled" class="message error hidden"></div>
+
+            <div class="goal-add-row">
+                <input id="goal-title" type="text" placeholder="Add a small daily goal...">
+                <button id="goal-add" class="btn btn-primary">Add</button>
+            </div>
+            <div id="goals-msg" class="message hidden"></div>
+            <div id="goals-list"></div>
+        </div>
+    </div>
+
+    <script src="js/goals.js"></script>
+    <script src="js/helpbot.js"></script>
+    <script src="js/accessibility.js"></script>
+    <button id="page-scroll-top-btn" class="page-scroll-top-btn" aria-label="Scroll to top" title="Scroll to top">↑</button>
+</body>
+</html>
