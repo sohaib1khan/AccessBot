@@ -5,6 +5,7 @@ let customItems = [];
 let activeType = 'all';
 let searchTerm = '';
 let editingCustomId = null;
+let rechargePluginDisabled = false;
 
 if (!authToken) {
     window.location.href = '/';
@@ -51,12 +52,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadQuote() {
+    if (rechargePluginDisabled) return;
     const btn = document.getElementById('refresh-quote-btn');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Loading…'; }
     try {
         const res = await apiFetch(`${API_URL}/plugins/recharge/quote`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+        if (res.status === 403) {
+            showRechargeDisabledState();
+            return;
+        }
         const data = await res.json();
         if (res.ok) {
             renderQuote(data.quote, data.updated_at);
@@ -69,10 +75,16 @@ async function loadQuote() {
 }
 
 async function loadFeed(refreshOnlyQuote) {
+    if (rechargePluginDisabled) return;
     try {
         const res = await apiFetch(`${API_URL}/plugins/recharge/feed`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+
+        if (res.status === 403) {
+            showRechargeDisabledState();
+            return;
+        }
 
         const data = await res.json();
         if (!res.ok) {
@@ -166,10 +178,15 @@ function renderFeed() {
 }
 
 async function loadCustomItems() {
+    if (rechargePluginDisabled) return;
     try {
         const res = await apiFetch(`${API_URL}/plugins/recharge/custom-items`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+        if (res.status === 403) {
+            showRechargeDisabledState();
+            return;
+        }
         const data = await res.json();
         if (!res.ok) {
             showCustomMessage(typeof data.detail === 'string' ? data.detail : 'Failed to load custom items.', true);
@@ -332,6 +349,38 @@ function renderError(message) {
     if (grid) {
         grid.innerHTML = `<p class="recharge-empty">${escapeHtml(message)}</p>`;
     }
+}
+
+function showRechargeDisabledState() {
+    rechargePluginDisabled = true;
+
+    const quoteText = document.getElementById('quote-text');
+    const quoteAuthor = document.getElementById('quote-author');
+    const quoteUpdated = document.getElementById('quote-updated');
+    const grid = document.getElementById('recharge-grid');
+    const empty = document.getElementById('recharge-empty');
+    const customList = document.getElementById('custom-items-list');
+    const customEmpty = document.getElementById('custom-items-empty');
+    const customMsg = document.getElementById('custom-item-message');
+
+    if (quoteText) quoteText.textContent = 'Enable plugin please: Motivation & Recharge (Settings → Plugins).';
+    if (quoteAuthor) quoteAuthor.textContent = '';
+    if (quoteUpdated) quoteUpdated.textContent = '';
+    if (grid) grid.innerHTML = '<p class="recharge-empty">Enable plugin please: Motivation & Recharge.</p>';
+    if (empty) empty.classList.add('hidden');
+    if (customList) customList.innerHTML = '';
+    if (customEmpty) {
+        customEmpty.classList.remove('hidden');
+        customEmpty.textContent = 'Enable plugin please: Motivation & Recharge.';
+    }
+    if (customMsg) {
+        customMsg.textContent = 'Enable plugin please: Motivation & Recharge.';
+        customMsg.classList.add('error');
+    }
+
+    document.querySelectorAll('#recharge-search, .rf-btn, #refresh-quote-btn, #custom-item-form input, #custom-item-form select, #custom-item-form textarea, #custom-item-form button').forEach(el => {
+        el.disabled = true;
+    });
 }
 
 function escapeHtml(text) {

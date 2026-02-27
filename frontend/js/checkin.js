@@ -28,6 +28,7 @@ const MOOD_EMOJI = { great: '😊', good: '🙂', okay: '😐', tired: '😴', s
 
 let selectedMood    = '';
 let editingEntryId  = null;  // null = new check-in, number = edit existing
+let checkinPluginDisabled = false;
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
@@ -84,10 +85,15 @@ function selectMoodBtn(mood) {
 
 async function loadTodayStatus() {
     const statusEl = document.getElementById('today-status');
+    if (checkinPluginDisabled) return;
     try {
         const res = await apiFetch(`${API_URL}/plugins/checkin/status`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+        if (res.status === 403) {
+            showCheckinDisabledState();
+            return;
+        }
         if (!res.ok) { statusEl.innerHTML = '<p class="ci-muted">Could not load status.</p>'; return; }
         const data = await res.json();
 
@@ -293,6 +299,8 @@ async function loadHistory() {
     const tableWrap  = document.getElementById('history-table-wrap');
     const tbody      = document.getElementById('history-body');
 
+    if (checkinPluginDisabled) return;
+
     loadingEl.classList.remove('hidden');
     emptyEl.classList.add('hidden');
     tableWrap.classList.add('hidden');
@@ -301,6 +309,10 @@ async function loadHistory() {
         const res = await apiFetch(`${API_URL}/plugins/checkin/history?days=365`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+        if (res.status === 403) {
+            showCheckinDisabledState();
+            return;
+        }
         if (!res.ok) { loadingEl.textContent = 'Failed to load history.'; return; }
         const data = await res.json();
 
@@ -398,4 +410,28 @@ function showFormMessage(msg, type) {
 
 function hideFormMessage() {
     document.getElementById('form-message').classList.add('hidden');
+}
+
+function showCheckinDisabledState() {
+    checkinPluginDisabled = true;
+
+    const statusEl = document.getElementById('today-status');
+    const formCard = document.getElementById('form-card');
+    const loadingEl = document.getElementById('history-loading');
+    const emptyEl = document.getElementById('history-empty');
+    const tableWrap = document.getElementById('history-table-wrap');
+    const aiPanel = document.getElementById('ai-help-panel');
+
+    if (statusEl) {
+        statusEl.innerHTML = '<p class="ci-muted">Enable plugin please: Daily Check-in (Settings → Plugins).</p>';
+    }
+    if (formCard) formCard.classList.add('hidden');
+    if (aiPanel) aiPanel.classList.add('hidden');
+
+    if (loadingEl) {
+        loadingEl.classList.remove('hidden');
+        loadingEl.textContent = 'Enable plugin please: Daily Check-in.';
+    }
+    if (emptyEl) emptyEl.classList.add('hidden');
+    if (tableWrap) tableWrap.classList.add('hidden');
 }

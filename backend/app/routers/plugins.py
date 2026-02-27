@@ -26,6 +26,10 @@ class PluginInfo(BaseModel):
     enabled: bool
 
 
+class PluginToggleRequest(BaseModel):
+    enabled: bool | None = None
+
+
 class CheckinRequest(BaseModel):
     mood: str        # 'great' | 'good' | 'okay' | 'tired' | 'struggling'
     note: str | None = None
@@ -174,6 +178,7 @@ async def list_plugins(
 @router.post("/{plugin_name}/toggle")
 async def toggle_plugin(
     plugin_name: str,
+    data: PluginToggleRequest | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -183,7 +188,7 @@ async def toggle_plugin(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plugin not found")
 
     currently_enabled = plugin_manager.is_enabled(plugin_name, current_user.id, db)
-    new_state = not currently_enabled
+    new_state = data.enabled if (data is not None and data.enabled is not None) else (not currently_enabled)
     plugin_manager.set_enabled(plugin_name, current_user.id, new_state, db)
 
     return {"plugin": plugin_name, "enabled": new_state}
@@ -197,6 +202,9 @@ async def checkin_status(
     db: Session = Depends(get_db)
 ):
     """Check if the current user has done their daily check-in."""
+    if not plugin_manager.is_enabled("daily_checkin", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Daily Check-in")
+
     from app.plugins.daily_checkin.plugin import MOOD_LABELS
     from datetime import date, timezone, datetime
 
@@ -286,6 +294,9 @@ async def checkin_history(
     db: Session = Depends(get_db)
 ):
     """Return all check-ins for the current user, newest first."""
+    if not plugin_manager.is_enabled("daily_checkin", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Daily Check-in")
+
     from datetime import date, datetime, timedelta, timezone
     from app.models.plugin import UserAnalytics
     MOOD_LABELS_LOCAL = {
@@ -331,6 +342,9 @@ async def checkin_ai_suggest(
     db: Session = Depends(get_db)
 ):
     """Ask the LLM for a suggested journal note based on the user's mood."""
+    if not plugin_manager.is_enabled("daily_checkin", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Daily Check-in")
+
     from app.services.ai.router import AIRouter
     MOOD_LABELS_LOCAL = {
         "great": "great", "good": "good", "okay": "okay",
@@ -365,6 +379,9 @@ async def update_checkin(
     db: Session = Depends(get_db)
 ):
     """Update mood and/or note on an existing check-in."""
+    if not plugin_manager.is_enabled("daily_checkin", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Daily Check-in")
+
     from app.models.plugin import UserAnalytics
     MOOD_LABELS_LOCAL = {
         "great": "😊 Great", "good": "🙂 Good", "okay": "😐 Okay",
@@ -403,6 +420,9 @@ async def delete_checkin(
     db: Session = Depends(get_db)
 ):
     """Delete a check-in entry."""
+    if not plugin_manager.is_enabled("daily_checkin", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Daily Check-in")
+
     from app.models.plugin import UserAnalytics
     entry = db.query(UserAnalytics).filter(
         UserAnalytics.id == entry_id,

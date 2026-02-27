@@ -331,27 +331,38 @@ function renderPlugins(plugins) {
                     type="checkbox"
                     data-plugin="${p.name}"
                     ${p.enabled ? 'checked' : ''}
-                    onchange="togglePlugin('${p.name}', this)"
                 >
                 <span class="toggle-slider"></span>
             </label>
         </div>
     `).join('');
+
+    container.querySelectorAll('input[type="checkbox"][data-plugin]').forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+            const name = checkbox.dataset.plugin;
+            const previousState = !checkbox.checked;
+            togglePlugin(name, checkbox, previousState);
+        });
+    });
 }
 
-async function togglePlugin(name, checkbox) {
+async function togglePlugin(name, checkbox, previousState) {
     checkbox.disabled = true;
     try {
         const res = await apiFetch(`${API_URL}/plugins/${name}/toggle`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${authToken}` }
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ enabled: checkbox.checked })
         });
         if (!res.ok) throw new Error();
         const data = await res.json();
         checkbox.checked = data.enabled;   // sync to server truth
         showMessage(`${name.replace('_', ' ')} ${data.enabled ? 'enabled' : 'disabled'}.`, 'success');
     } catch {
-        checkbox.checked = !checkbox.checked;  // revert on error
+        checkbox.checked = previousState;  // revert on error
         showMessage('Failed to update plugin. Please try again.', 'error');
     } finally {
         checkbox.disabled = false;
