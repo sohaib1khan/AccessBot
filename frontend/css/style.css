@@ -623,6 +623,64 @@ body {
 .msg-retry-btn:hover { background: rgba(120,20,20,0.28); border-color: var(--error, #f87171); }
 .msg-retry-btn:focus-visible { outline: 2px solid var(--error, #f87171); outline-offset: 2px; }
 .message.assistant { align-self: flex-start; background: var(--bubble-bot); color: var(--bubble-bot-text); border-bottom-left-radius: 4px; border: 1px solid var(--border); }
+
+/* Retry button on user messages */
+.msg-actions-user {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+.msg-actions-user .msg-action-btn {
+    font-size: 0.78rem;
+    padding: 3px 9px;
+    opacity: 0.55;
+    border-color: rgba(0,196,167,0.3);
+    color: var(--accent);
+}
+.message.user:hover .msg-actions-user .msg-action-btn,
+.message.user:focus-within .msg-actions-user .msg-action-btn {
+    opacity: 1;
+}
+
+/* Retry button on user messages — base overrides already in .msg-action-btn */
+.msg-actions-user .msg-action-btn:hover {
+    background: rgba(0,196,167,0.12);
+    border-color: var(--accent);
+}
+
+/* Thumbs + retry on assistant messages */
+.msg-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    opacity: 0.5;
+    transition: opacity 0.18s ease;
+}
+.message.assistant:hover .msg-actions,
+.message.assistant:focus-within .msg-actions {
+    opacity: 1;
+}
+.msg-action-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm, 6px);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: var(--font-base);
+    transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.msg-action-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.msg-action-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.thumb-up.active  { color: #4ade80; border-color: #4ade80; background: rgba(74,222,128,0.12); }
+.thumb-down.active { color: var(--error, #f87171); border-color: var(--error-border, #7b2020); background: rgba(248,113,113,0.12); }
+
 .message.loading { background: var(--bg-raised); color: var(--text-muted); font-style: italic; align-self: flex-start; border: 1px solid var(--border); }
 
 .message.error-bubble {

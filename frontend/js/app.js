@@ -597,7 +597,7 @@ async function loadConversation(conversationId) {
         
         // Render messages
         messagesContainer.innerHTML = '';
-        conversation.messages.forEach(msg => addMessage(msg.content, msg.role));
+        conversation.messages.forEach(msg => addMessage(msg.content, msg.role, msg.id));
         activeConversationSignature = buildConversationSignature(conversation.messages);
         
         // Highlight active in sidebar
@@ -815,6 +815,39 @@ async function retrySend() {
     messageInput.focus();
 }
 
+// Resend any message text — works even on loaded conversations (no lastSendPayload needed)
+async function sendAsRetry(text) {
+    if (!text || !authToken) return;
+    messagesContainer.querySelectorAll('.message.error-bubble').forEach(el => el.remove());
+    const payload = { message: text, capturedImage: null, conversationId: currentConversationId };
+    lastSendPayload = payload;
+    const loadingId = addMessage('Thinking...', 'loading');
+    sendBtn.disabled = true;
+    await dispatchToLLM(payload, loadingId);
+    sendBtn.disabled = false;
+    messageInput.focus();
+}
+
+async function submitFeedback(dbMessageId, vote) {
+    if (!dbMessageId || !authToken) return;
+    try {
+        await apiFetch(`${API_URL}/chat/feedback`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({
+                message_id: dbMessageId,
+                vote: vote,
+                conversation_id: currentConversationId
+            })
+        });
+    } catch (e) {
+        // silently ignore feedback errors — don't disrupt the chat
+    }
+}
+
 // Core API call — shared by sendMessage and retrySend
 async function dispatchToLLM(payload, loadingId) {
     const { message, capturedImage, conversationId } = payload;
@@ -852,7 +885,7 @@ async function dispatchToLLM(payload, loadingId) {
 
         if (response.ok) {
             removeMessage(loadingId);
-            addMessage(data.message, 'assistant');
+            addMessage(data.message, 'assistant', data.message_id);
 
             currentConversationId = data.conversation_id;
             localStorage.setItem('activeConversationId', data.conversation_id);
@@ -954,7 +987,7 @@ async function syncActiveConversation() {
 
         const nearBottom = (messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight) < 80;
         messagesContainer.innerHTML = '';
-        conversation.messages.forEach(msg => addMessage(msg.content, msg.role));
+        conversation.messages.forEach(msg => addMessage(msg.content, msg.role, msg.id));
         activeConversationSignature = nextSignature;
         if (nearBottom) messagesContainer.scrollTop = messagesContainer.scrollHeight;
         updateActiveSidebarItem(currentConversationId);
@@ -1210,7 +1243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function addMessage(text, role) {
+function addMessage(text, role, dbMessageId = null) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
 
@@ -1226,6 +1259,9 @@ function addMessage(text, role) {
             }
         } catch (e) { /* plain text */ }
     }
+
+    // Store plain text so retry buttons can re-send without relying on lastSendPayload
+    messageDiv.dataset.msgText = displayText;
 
     if (imageData) {
         const img = document.createElement('img');
@@ -1256,6 +1292,74 @@ function addMessage(text, role) {
     }
     if (!imageData && !displayText) {
         messageDiv.textContent = text; // safe fallback
+    }
+
+    // Retry button on user messages
+    if (role === 'user') {
+        const actions = document.createElement('div');
+        actions.className = 'msg-actions msg-actions-user';
+
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'msg-action-btn retry-btn';
+        retryBtn.title = 'Ask again';
+        retryBtn.setAttribute('aria-label', 'Ask again');
+        retryBtn.textContent = '\uD83D\uDD04 Ask again';
+        retryBtn.addEventListener('click', () => {
+            const msgText = messageDiv.dataset.msgText;
+            if (msgText) sendAsRetry(msgText);
+        });
+
+        actions.appendChild(retryBtn);
+        messageDiv.appendChild(actions);
+    }
+
+    // Thumbs up / down + retry on assistant messages
+    if (role === 'assistant') {
+        const actions = document.createElement('div');
+        actions.className = 'msg-actions';
+
+        const thumbUp = document.createElement('button');
+        thumbUp.className = 'msg-action-btn thumb-btn thumb-up';
+        thumbUp.title = 'Good response';
+        thumbUp.setAttribute('aria-label', 'Good response');
+        thumbUp.textContent = '\uD83D\uDC4D';
+
+        const thumbDown = document.createElement('button');
+        thumbDown.className = 'msg-action-btn thumb-btn thumb-down';
+        thumbDown.title = 'Bad response';
+        thumbDown.setAttribute('aria-label', 'Bad response');
+        thumbDown.textContent = '\uD83D\uDC4E';
+
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'msg-action-btn retry-btn';
+        retryBtn.title = 'Regenerate response';
+        retryBtn.setAttribute('aria-label', 'Regenerate response');
+        retryBtn.textContent = '\uD83D\uDD04';
+
+        thumbUp.addEventListener('click', () => {
+            const wasActive = thumbUp.classList.contains('active');
+            thumbUp.classList.toggle('active');
+            thumbDown.classList.remove('active');
+            if (!wasActive) submitFeedback(dbMessageId, 'up');
+        });
+        thumbDown.addEventListener('click', () => {
+            const wasActive = thumbDown.classList.contains('active');
+            thumbDown.classList.toggle('active');
+            thumbUp.classList.remove('active');
+            if (!wasActive) submitFeedback(dbMessageId, 'down');
+        });
+        retryBtn.addEventListener('click', () => {
+            // Find the last user bubble and resend its text
+            const userBubbles = Array.from(messagesContainer.querySelectorAll('.message.user'));
+            const prevUser = userBubbles[userBubbles.length - 1];
+            const msgText = prevUser?.dataset?.msgText;
+            if (msgText) sendAsRetry(msgText);
+        });
+
+        actions.appendChild(thumbUp);
+        actions.appendChild(thumbDown);
+        actions.appendChild(retryBtn);
+        messageDiv.appendChild(actions);
     }
 
     const messageId = Date.now();

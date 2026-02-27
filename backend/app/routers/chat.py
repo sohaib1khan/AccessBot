@@ -12,11 +12,13 @@ from app.models.user import User
 from app.models.conversation import Conversation, Message
 from app.services.ai.router import ai_router
 from app.plugins.manager import plugin_manager
+from app.models.plugin import UserAnalytics
 
 router = APIRouter()
 
 # Request/Response models
 class ChatMessage(BaseModel):
+    id: Optional[int] = None
     role: str  # 'user' or 'assistant'
     content: str
 
@@ -29,6 +31,7 @@ class ChatResponse(BaseModel):
     conversation_id: int
     message: str
     role: str = "assistant"
+    message_id: Optional[int] = None
 
 class RenameRequest(BaseModel):
     title: str
@@ -194,11 +197,13 @@ async def send_message(
             )
             db.add(assistant_message)
             db.commit()
+            db.refresh(assistant_message)
             _touch_conversation(conversation)
             return {
                 "conversation_id": conversation.id,
                 "message": fallback_message,
-                "role": "assistant"
+                "role": "assistant",
+                "message_id": assistant_message.id
             }
 
         raise HTTPException(
@@ -217,12 +222,14 @@ async def send_message(
     )
     db.add(assistant_message)
     db.commit()
+    db.refresh(assistant_message)
     _touch_conversation(conversation)
     
     return {
         "conversation_id": conversation.id,
         "message": ai_response,
-        "role": "assistant"
+        "role": "assistant",
+        "message_id": assistant_message.id
     }
 
 @router.get("/conversations", response_model=List[ConversationSummary])
@@ -378,7 +385,34 @@ async def get_conversation(
         "id": conversation.id,
         "title": conversation.title,
         "messages": [
-            {"role": msg.role, "content": msg.content}
+            {"id": msg.id, "role": msg.role, "content": msg.content}
             for msg in messages
         ]
     }
+
+@router.post("/feedback")
+async def submit_feedback(
+    data: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Save thumbs-up / thumbs-down feedback for an assistant message"""
+    message_id = data.get("message_id")
+    vote = data.get("vote")  # "up" or "down"
+    conversation_id = data.get("conversation_id")
+    if not message_id or vote not in ("up", "down"):
+        raise HTTPException(status_code=400, detail="message_id and vote ('up'/'down') required")
+    # Upsert: remove any prior feedback for this message from this user, then insert fresh
+    db.query(UserAnalytics).filter(
+        UserAnalytics.user_id == current_user.id,
+        UserAnalytics.metric_type == "message_feedback",
+        UserAnalytics.metric_value["message_id"].astext == str(message_id)
+    ).delete(synchronize_session=False)
+    entry = UserAnalytics(
+        user_id=current_user.id,
+        metric_type="message_feedback",
+        metric_value={"message_id": message_id, "vote": vote, "conversation_id": conversation_id}
+    )
+    db.add(entry)
+    db.commit()
+    return {"ok": True, "message_id": message_id, "vote": vote}
