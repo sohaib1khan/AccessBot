@@ -1080,16 +1080,38 @@ body {
     .chat-header-user > span { display: none; }
     .chat-header-top { padding: 10px 12px 8px; }
     .chat-header-top h1 { font-size: 1.35rem; }
-    .chat-nav-main { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .chat-nav-tools { grid-template-columns: 1fr auto; }
-    .btn-nav {
-        min-height: 48px;
-        font-size: 0.88rem;
-        padding: 9px 8px;
-        white-space: normal;
-        text-align: center;
+    .chat-header-nav {
+        gap: 6px;
+        padding: 6px 8px;
     }
-    .chat-nav-tools .a11y-btn { min-height: 48px; padding: 9px 10px; }
+    .chat-nav-main {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 6px;
+        padding-bottom: 2px;
+    }
+    .chat-nav-main::-webkit-scrollbar { display: none; }
+    .chat-nav-main .btn-nav {
+        flex: 0 0 auto;
+        width: auto;
+        min-width: 126px;
+        min-height: 44px;
+        font-size: 0.84rem;
+        padding: 8px 10px;
+        white-space: nowrap;
+    }
+    .chat-nav-tools { grid-template-columns: 1fr auto; }
+    .chat-nav-tools .btn-nav,
+    .chat-nav-tools .a11y-btn {
+        min-height: 44px;
+        padding: 8px 10px;
+        font-size: 0.84rem;
+        white-space: nowrap;
+    }
     .a11y-panel { right: 0; min-width: 220px; }
     .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 80vw; max-width: 300px; z-index: 200; border-radius: 0; transform: translateX(-100%); transition: transform 0.25s ease; border-right: 1px solid var(--border-bright); box-shadow: 4px 0 32px rgba(0,0,0,0.7); }
     .sidebar.open { transform: translateX(0); }
@@ -1102,10 +1124,10 @@ body {
 
 @media (max-width: 480px) {
     .chat-header-nav { gap: 5px; padding: 6px; }
-    .chat-nav-main { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
-    .chat-nav-tools { grid-template-columns: 1fr 1fr; gap: 5px; }
-    .btn-nav { font-size: 0.82rem; min-height: 46px; padding: 8px 6px; }
-    .a11y-btn { width: 100%; min-width: 0; justify-content: center; }
+    .chat-nav-main .btn-nav { min-width: 118px; font-size: 0.8rem; }
+    .chat-nav-tools { grid-template-columns: 1fr auto; gap: 5px; }
+    .chat-nav-tools .btn-nav,
+    .chat-nav-tools .a11y-btn { font-size: 0.8rem; min-height: 42px; padding: 7px 9px; }
 }
 
 @media (min-width: 701px) and (max-width: 900px) {
