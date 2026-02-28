@@ -12,19 +12,21 @@ async function apiFetch(url, options = {}) {
 }
 
 function showDisabled(msg) {
-    const d = document.getElementById('goals-disabled');
-    d.textContent = msg || 'Enable plugin please: Goal Streaks (Settings → Plugins).';
+    const d = document.getElementById('kanban-disabled');
+    d.textContent = msg || 'Enable plugin please: Kanban Board (Settings → Plugins).';
     d.classList.remove('hidden');
-    document.getElementById('goal-title').disabled = true;
-    document.getElementById('goal-add').disabled = true;
+    ['kanban-title', 'kanban-note', 'kanban-column', 'kanban-add'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = true;
+    });
 }
 
 function showMsg(text, type = 'success') {
-    const el = document.getElementById('goals-msg');
+    const el = document.getElementById('kanban-msg');
     el.textContent = text;
     el.className = `message ${type}`;
     el.classList.remove('hidden');
-    setTimeout(() => el.classList.add('hidden'), 3000);
+    setTimeout(() => el.classList.add('hidden'), 2500);
 }
 
 function esc(text) {
@@ -33,72 +35,123 @@ function esc(text) {
     return d.innerHTML;
 }
 
-async function loadGoals() {
-    const list = document.getElementById('goals-list');
-    const res = await apiFetch(`${API_URL}/plugins/goals`, {
+function columnLabel(col) {
+    if (col === 'now') return 'Now';
+    if (col === 'done') return 'Done';
+    return 'Next';
+}
+
+async function loadCards() {
+    const nowBox = document.getElementById('kanban-now');
+    const nextBox = document.getElementById('kanban-next');
+    const doneBox = document.getElementById('kanban-done');
+    nowBox.innerHTML = '';
+    nextBox.innerHTML = '';
+    doneBox.innerHTML = '';
+
+    const res = await apiFetch(`${API_URL}/plugins/kanban/cards`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
     });
     const data = await res.json().catch(() => ({}));
+
     if (res.status === 403) {
         showDisabled(data?.detail);
-        list.innerHTML = '';
         return;
     }
     if (!res.ok) {
-        list.innerHTML = '<p class="loading-text">Could not load goals.</p>';
+        showMsg(data?.detail || 'Could not load board.', 'error');
         return;
     }
 
-    const goals = data.goals || [];
-    if (!goals.length) {
-        list.innerHTML = '<p class="loading-text">No goals yet. Add one small goal to get started.</p>';
+    const cards = Array.isArray(data.cards) ? data.cards : [];
+    if (!cards.length) {
+        nextBox.innerHTML = '<p class="loading-text">No cards yet. Add your first one above.</p>';
         return;
     }
 
-    list.innerHTML = goals.map(g => `
-        <div class="plugin-row" data-id="${g.id}">
-            <div class="plugin-info">
-                <strong>${esc(g.title)}</strong>
-                <span>Streak: ${g.streak || 0} day(s) ${g.completed_today ? '• ✅ done today' : ''}</span>
+    cards.forEach((card) => {
+        const col = card.column === 'now' || card.column === 'done' ? card.column : 'next';
+        const container = col === 'now' ? nowBox : (col === 'done' ? doneBox : nextBox);
+        const div = document.createElement('article');
+        div.className = 'kanban-card';
+        div.dataset.id = card.id;
+        div.innerHTML = `
+            <div class="kanban-card-title">${esc(card.title)}</div>
+            ${card.note ? `<div class="kanban-card-note">${esc(card.note)}</div>` : ''}
+            <div class="kanban-card-actions">
+                <button class="btn btn-secondary btn-sm card-move">Move</button>
+                <button class="btn btn-danger btn-sm card-delete">Delete</button>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn btn-secondary btn-sm goal-toggle">${g.completed_today ? 'Undo today' : 'Done today'}</button>
-                <button class="btn btn-danger btn-sm goal-delete">Delete</button>
-            </div>
-        </div>
-    `).join('');
+        `;
 
-    list.querySelectorAll('.goal-toggle').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const row = btn.closest('[data-id]');
-            const id = row.dataset.id;
-            const isDone = btn.textContent.toLowerCase().includes('undo');
-            const method = isDone ? 'DELETE' : 'POST';
-            const r = await apiFetch(`${API_URL}/plugins/goals/${id}/complete`, {
-                method,
-                headers: { 'Authorization': `Bearer ${authToken}` }
+        div.querySelector('.card-move')?.addEventListener('click', async () => {
+            const nextCol = col === 'now' ? 'next' : (col === 'next' ? 'done' : 'now');
+            const r = await apiFetch(`${API_URL}/plugins/kanban/cards/${card.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ column: nextCol })
             });
             const body = await r.json().catch(() => ({}));
             if (r.status === 403) { showDisabled(body?.detail); return; }
-            if (!r.ok) { showMsg(body?.detail || 'Failed to update goal.', 'error'); return; }
-            await loadGoals();
+            if (!r.ok) { showMsg(body?.detail || 'Move failed.', 'error'); return; }
+            showMsg(`Moved to ${columnLabel(nextCol)}.`);
+            await loadCards();
         });
-    });
 
-    list.querySelectorAll('.goal-delete').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const row = btn.closest('[data-id]');
-            const id = row.dataset.id;
-            const r = await apiFetch(`${API_URL}/plugins/goals/${id}`, {
+        div.querySelector('.card-delete')?.addEventListener('click', async () => {
+            const r = await apiFetch(`${API_URL}/plugins/kanban/cards/${card.id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
             const body = await r.json().catch(() => ({}));
             if (r.status === 403) { showDisabled(body?.detail); return; }
-            if (!r.ok) { showMsg(body?.detail || 'Failed to delete goal.', 'error'); return; }
-            await loadGoals();
+            if (!r.ok) { showMsg(body?.detail || 'Delete failed.', 'error'); return; }
+            await loadCards();
         });
+
+        container.appendChild(div);
     });
+}
+
+async function addCard() {
+    const titleEl = document.getElementById('kanban-title');
+    const noteEl = document.getElementById('kanban-note');
+    const columnEl = document.getElementById('kanban-column');
+
+    const title = titleEl.value.trim();
+    if (!title) return;
+
+    const res = await apiFetch(`${API_URL}/plugins/kanban/cards`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            title,
+            note: noteEl.value.trim(),
+            column: columnEl.value
+        })
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (res.status === 403) {
+        showDisabled(data?.detail);
+        return;
+    }
+    if (!res.ok) {
+        showMsg(data?.detail || 'Could not add card.', 'error');
+        return;
+    }
+
+    titleEl.value = '';
+    noteEl.value = '';
+    columnEl.value = 'next';
+    showMsg('Card added.');
+    await loadCards();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -111,32 +164,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/';
     });
 
-    document.getElementById('goal-add')?.addEventListener('click', async () => {
-        const input = document.getElementById('goal-title');
-        const title = input.value.trim();
-        if (!title) return;
-        const res = await apiFetch(`${API_URL}/plugins/goals`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ title })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.status === 403) { showDisabled(data?.detail); return; }
-        if (!res.ok) { showMsg(data?.detail || 'Could not add goal.', 'error'); return; }
-        input.value = '';
-        showMsg('Goal added. Nice progress.');
-        await loadGoals();
-    });
-
-    document.getElementById('goal-title')?.addEventListener('keydown', (e) => {
+    document.getElementById('kanban-add')?.addEventListener('click', addCard);
+    document.getElementById('kanban-title')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            document.getElementById('goal-add')?.click();
+            addCard();
         }
     });
 
-    await loadGoals();
+    await loadCards();
 });

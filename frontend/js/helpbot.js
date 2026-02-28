@@ -44,11 +44,11 @@
             emoji: '🧩',
             desc: 'Break a large task into tiny actions with gentle pacing.',
         },
-        goals: {
+        kanban: {
             url: '/goals.html',
-            label: 'Goal Streaks',
-            emoji: '🎯',
-            desc: 'Create small goals, mark daily completion, and track supportive streaks.',
+            label: 'Kanban Board',
+            emoji: '🗂️',
+            desc: 'Organize tasks in simple Now, Next, and Done columns.',
         },
         urgent: {
             url: '/urgent.html',
@@ -100,9 +100,9 @@
             reply: 'The **Task Breakdown Coach** helps turn one overwhelming task into tiny, actionable steps with gentle pacing.',
         },
         {
-            page: 'goals',
-            patterns: ['goal', 'goals', 'streak', 'streaks', 'daily goal', 'accountability', 'habit streak'],
-            reply: 'The **Goal Streaks** page lets you track small daily goals with compassionate streaks and easy resets.',
+            page: 'kanban',
+            patterns: ['kanban', 'board', 'task board', 'columns', 'now next done', 'organize tasks', 'todo board'],
+            reply: 'The **Kanban Board** page helps you organize tasks in clear **Now / Next / Done** columns.',
         },
         {
             page: 'urgent',
@@ -155,7 +155,7 @@
         { label: '📋 Check in', query: 'where do I log my mood' },
         { label: '📊 View stats', query: 'show me my insights' },
         { label: '🧩 Task coach', query: 'open task breakdown coach' },
-        { label: '🎯 Goals', query: 'open goals' },
+        { label: '🗂️ Kanban', query: 'open kanban board' },
         { label: '🆘 Urgent support', query: 'open urgent support' },
         { label: '⚡ Recharge', query: 'open recharge page' },
         { label: '🗂️ Resources', query: 'show resources' },

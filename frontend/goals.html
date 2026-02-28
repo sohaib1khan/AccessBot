@@ -6,22 +6,59 @@
     <meta name="theme-color" content="#060e1c">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    <title>Goal Streaks - AccessBot</title>
+    <title>Kanban Board - AccessBot</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/settings.css">
     <link rel="stylesheet" href="css/accessibility.css">
     <link rel="stylesheet" href="css/helpbot.css">
     <style>
-        .goal-add-row { display:flex; gap:10px; align-items:center; margin-bottom:10px; }
-        #goal-title { flex:1; min-height:44px; padding:10px 12px; border:2px solid var(--border-bright, #2a5070); border-radius:8px; background:var(--bg-base, #0b1829); color:var(--text-primary, #ddf0ec); }
-        #goal-title::placeholder { color: var(--text-muted, #6f9f97); }
-        #goal-title:focus { outline: 3px solid rgba(0,196,167,0.20); border-color: var(--accent, #00c4a7); }
+        .kanban-add-row { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
+        #kanban-title, #kanban-note, #kanban-column {
+            min-height:44px; padding:10px 12px; border:2px solid var(--border-bright, #2a5070);
+            border-radius:8px; background:var(--bg-base, #0b1829); color:var(--text-primary, #ddf0ec);
+            font: inherit;
+        }
+        #kanban-title { flex: 1; }
+        #kanban-note { width: 100%; margin-bottom: 10px; resize: vertical; min-height: 80px; }
+        #kanban-title::placeholder, #kanban-note::placeholder { color: var(--text-muted, #6f9f97); }
+        #kanban-title:focus, #kanban-note:focus, #kanban-column:focus { outline: 3px solid rgba(0,196,167,0.20); border-color: var(--accent, #00c4a7); }
+
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .kanban-col {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-raised);
+            min-height: 220px;
+            padding: 10px;
+        }
+        .kanban-col h3 { margin: 0 0 8px; font-size: 0.95rem; color: var(--accent); }
+        .kanban-cards { display: flex; flex-direction: column; gap: 8px; }
+        .kanban-card {
+            border: 1px solid var(--border-bright);
+            border-radius: 8px;
+            background: var(--bg-card);
+            padding: 8px;
+        }
+        .kanban-card-title { font-weight: 700; margin-bottom: 4px; }
+        .kanban-card-note { color: var(--text-secondary); font-size: 0.9rem; white-space: pre-wrap; }
+        .kanban-card-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+
+        @media (max-width: 700px) {
+            .kanban-add-row { flex-direction: column; align-items: stretch; }
+            #kanban-title, #kanban-column, #kanban-add { width: 100%; }
+            .kanban-board { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
     <div class="settings-container">
         <div class="settings-header">
-            <h1>🎯 Goal Streaks</h1>
+            <h1>🗂️ Kanban Board</h1>
             <div class="header-actions" style="display:flex;gap:10px;flex-wrap:wrap;">
                 <a href="/" class="btn btn-secondary">← Chat</a>
                 <a href="/task-coach.html" class="btn btn-secondary">🧩 Task Coach</a>
@@ -32,15 +69,36 @@
         </div>
 
         <div class="settings-card">
-            <p style="margin-bottom:12px;color:var(--text-secondary)">Track small goals with gentle streaks and no-pressure resets.</p>
-            <div id="goals-disabled" class="message error hidden"></div>
+            <p style="margin-bottom:12px;color:var(--text-secondary)">Organize tasks clearly in Now, Next, and Done columns.</p>
+            <div id="kanban-disabled" class="message error hidden"></div>
 
-            <div class="goal-add-row">
-                <input id="goal-title" type="text" placeholder="Add a small daily goal...">
-                <button id="goal-add" class="btn btn-primary">Add</button>
+            <div class="kanban-add-row">
+                <input id="kanban-title" type="text" placeholder="Card title...">
+                <select id="kanban-column">
+                    <option value="now">Now</option>
+                    <option value="next" selected>Next</option>
+                    <option value="done">Done</option>
+                </select>
+                <button id="kanban-add" class="btn btn-primary">Add Card</button>
             </div>
-            <div id="goals-msg" class="message hidden"></div>
-            <div id="goals-list"></div>
+            <textarea id="kanban-note" placeholder="Optional note..."></textarea>
+
+            <div id="kanban-msg" class="message hidden"></div>
+
+            <div class="kanban-board">
+                <section class="kanban-col">
+                    <h3>Now</h3>
+                    <div id="kanban-now" class="kanban-cards"></div>
+                </section>
+                <section class="kanban-col">
+                    <h3>Next</h3>
+                    <div id="kanban-next" class="kanban-cards"></div>
+                </section>
+                <section class="kanban-col">
+                    <h3>Done</h3>
+                    <div id="kanban-done" class="kanban-cards"></div>
+                </section>
+            </div>
         </div>
     </div>
 

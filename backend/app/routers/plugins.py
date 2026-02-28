@@ -13,7 +13,7 @@ from app.plugins.manager import plugin_manager
 from app.plugins.daily_checkin.plugin import daily_checkin_plugin
 from app.plugins.mood_tracker.plugin import mood_tracker_plugin
 from app.plugins.recharge.plugin import recharge_plugin
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -109,12 +109,16 @@ class UrgentChatRequest(BaseModel):
     history: list[UrgentChatMessage] = []
 
 
-class GoalCreateRequest(BaseModel):
+class KanbanCardCreateRequest(BaseModel):
     title: str
+    note: str | None = None
+    column: str = "now"
 
 
-class GoalUpdateRequest(BaseModel):
-    title: str
+class KanbanCardUpdateRequest(BaseModel):
+    title: str | None = None
+    note: str | None = None
+    column: str | None = None
 
 
 class TaskBreakdownRequest(BaseModel):
@@ -124,44 +128,29 @@ class TaskBreakdownRequest(BaseModel):
 VALID_RECHARGE_TYPES = {"article", "video", "audio"}
 
 
-def _goal_row(user_id: int, db: Session) -> UserPlugin:
+def _kanban_row(user_id: int, db: Session) -> UserPlugin:
     row = db.query(UserPlugin).filter(
         UserPlugin.user_id == user_id,
-        UserPlugin.plugin_name == "goal_streaks"
+        UserPlugin.plugin_name == "kanban_board"
     ).first()
     if not row:
-        row = UserPlugin(user_id=user_id, plugin_name="goal_streaks", enabled=True, settings={})
+        row = UserPlugin(user_id=user_id, plugin_name="kanban_board", enabled=True, settings={})
         db.add(row)
         db.commit()
         db.refresh(row)
     return row
 
 
-def _goal_settings(row: UserPlugin) -> dict:
+def _kanban_settings(row: UserPlugin) -> dict:
     return row.settings if isinstance(row.settings, dict) else {}
 
 
-def _goal_save(row: UserPlugin, settings: dict, db: Session):
+def _kanban_save(row: UserPlugin, settings: dict, db: Session):
     row.settings = settings
     flag_modified(row, "settings")
     db.add(row)
     db.commit()
     db.refresh(row)
-
-
-def _goal_streak(completions: list[dict], goal_id: str) -> int:
-    dates = {
-        c.get("date") for c in completions
-        if c.get("goal_id") == goal_id and isinstance(c.get("date"), str)
-    }
-    if not dates:
-        return 0
-    streak = 0
-    day = datetime.now(timezone.utc).date()
-    while day.isoformat() in dates:
-        streak += 1
-        day = day - timedelta(days=1)
-    return streak
 
 
 def _task_row(user_id: int, db: Session) -> UserPlugin:
@@ -691,148 +680,122 @@ async def urgent_session_chat(
     return {"message": reply}
 
 
-@router.get("/goals")
-async def goals_list(
+@router.get("/kanban/cards")
+async def kanban_list_cards(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
+    if not plugin_manager.is_enabled("kanban_board", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Kanban Board")
 
-    row = _goal_row(current_user.id, db)
-    settings = _goal_settings(row)
-    goals = settings.get("goals", []) if isinstance(settings.get("goals", []), list) else []
-    completions = settings.get("completions", []) if isinstance(settings.get("completions", []), list) else []
+    row = _kanban_row(current_user.id, db)
+    settings = _kanban_settings(row)
+    cards = settings.get("cards", []) if isinstance(settings.get("cards", []), list) else []
 
-    out = []
-    for g in goals:
-        gid = g.get("id", "")
-        out.append({
-            "id": gid,
-            "title": g.get("title", ""),
-            "created_at": g.get("created_at"),
-            "streak": _goal_streak(completions, gid),
-            "completed_today": any(c.get("goal_id") == gid and c.get("date") == datetime.now(timezone.utc).date().isoformat() for c in completions),
+    valid_columns = {"now", "next", "done"}
+    normalized = []
+    for c in cards:
+        col = c.get("column", "next")
+        normalized.append({
+            "id": c.get("id"),
+            "title": c.get("title", ""),
+            "note": c.get("note") or "",
+            "column": col if col in valid_columns else "next",
+            "created_at": c.get("created_at"),
+            "updated_at": c.get("updated_at"),
         })
-    return {"goals": out}
+    return {"cards": normalized}
 
 
-@router.post("/goals")
-async def goals_add(
-    data: GoalCreateRequest,
+@router.post("/kanban/cards")
+async def kanban_add_card(
+    data: KanbanCardCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
+    if not plugin_manager.is_enabled("kanban_board", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Kanban Board")
 
     title = (data.title or "").strip()
     if not title:
         raise HTTPException(status_code=400, detail="title is required")
 
-    row = _goal_row(current_user.id, db)
-    settings = _goal_settings(row)
-    goals = settings.get("goals", []) if isinstance(settings.get("goals", []), list) else []
-    new_goal = {
+    column = (data.column or "next").strip().lower()
+    if column not in {"now", "next", "done"}:
+        column = "next"
+
+    row = _kanban_row(current_user.id, db)
+    settings = _kanban_settings(row)
+    cards = settings.get("cards", []) if isinstance(settings.get("cards", []), list) else []
+    now_iso = datetime.now(timezone.utc).isoformat()
+    card = {
         "id": uuid4().hex[:12],
-        "title": title[:140],
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "title": title[:160],
+        "note": (data.note or "")[:1000],
+        "column": column,
+        "created_at": now_iso,
+        "updated_at": now_iso,
     }
-    goals.insert(0, new_goal)
-    settings["goals"] = goals
-    settings.setdefault("completions", [])
-    _goal_save(row, settings, db)
-    return new_goal
+    cards.insert(0, card)
+    settings["cards"] = cards
+    _kanban_save(row, settings, db)
+    return card
 
 
-@router.patch("/goals/{goal_id}")
-async def goals_update(
-    goal_id: str,
-    data: GoalUpdateRequest,
+@router.patch("/kanban/cards/{card_id}")
+async def kanban_update_card(
+    card_id: str,
+    data: KanbanCardUpdateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
+    if not plugin_manager.is_enabled("kanban_board", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Kanban Board")
 
-    title = (data.title or "").strip()
-    if not title:
-        raise HTTPException(status_code=400, detail="title is required")
+    row = _kanban_row(current_user.id, db)
+    settings = _kanban_settings(row)
+    cards = settings.get("cards", []) if isinstance(settings.get("cards", []), list) else []
 
-    row = _goal_row(current_user.id, db)
-    settings = _goal_settings(row)
-    goals = settings.get("goals", []) if isinstance(settings.get("goals", []), list) else []
-    for g in goals:
-        if g.get("id") == goal_id:
-            g["title"] = title[:140]
-            settings["goals"] = goals
-            _goal_save(row, settings, db)
-            return g
-    raise HTTPException(status_code=404, detail="Goal not found")
+    for card in cards:
+        if card.get("id") == card_id:
+            if data.title is not None:
+                title = data.title.strip()
+                if not title:
+                    raise HTTPException(status_code=400, detail="title cannot be empty")
+                card["title"] = title[:160]
+            if data.note is not None:
+                card["note"] = data.note[:1000]
+            if data.column is not None:
+                column = data.column.strip().lower()
+                if column not in {"now", "next", "done"}:
+                    raise HTTPException(status_code=400, detail="column must be one of: now, next, done")
+                card["column"] = column
+            card["updated_at"] = datetime.now(timezone.utc).isoformat()
+            settings["cards"] = cards
+            _kanban_save(row, settings, db)
+            return card
+
+    raise HTTPException(status_code=404, detail="Card not found")
 
 
-@router.delete("/goals/{goal_id}")
-async def goals_delete(
-    goal_id: str,
+@router.delete("/kanban/cards/{card_id}")
+async def kanban_delete_card(
+    card_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
+    if not plugin_manager.is_enabled("kanban_board", current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Kanban Board")
 
-    row = _goal_row(current_user.id, db)
-    settings = _goal_settings(row)
-    goals = settings.get("goals", []) if isinstance(settings.get("goals", []), list) else []
-    completions = settings.get("completions", []) if isinstance(settings.get("completions", []), list) else []
-    next_goals = [g for g in goals if g.get("id") != goal_id]
-    if len(next_goals) == len(goals):
-        raise HTTPException(status_code=404, detail="Goal not found")
-    settings["goals"] = next_goals
-    settings["completions"] = [c for c in completions if c.get("goal_id") != goal_id]
-    _goal_save(row, settings, db)
-    return {"deleted": goal_id}
-
-
-@router.post("/goals/{goal_id}/complete")
-async def goals_complete_today(
-    goal_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
-
-    row = _goal_row(current_user.id, db)
-    settings = _goal_settings(row)
-    goals = settings.get("goals", []) if isinstance(settings.get("goals", []), list) else []
-    if not any(g.get("id") == goal_id for g in goals):
-        raise HTTPException(status_code=404, detail="Goal not found")
-
-    completions = settings.get("completions", []) if isinstance(settings.get("completions", []), list) else []
-    today = datetime.now(timezone.utc).date().isoformat()
-    completions = [c for c in completions if not (c.get("goal_id") == goal_id and c.get("date") == today)]
-    completions.append({"goal_id": goal_id, "date": today})
-    settings["completions"] = completions
-    _goal_save(row, settings, db)
-    return {"goal_id": goal_id, "date": today, "streak": _goal_streak(completions, goal_id)}
-
-
-@router.delete("/goals/{goal_id}/complete")
-async def goals_uncomplete_today(
-    goal_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    if not plugin_manager.is_enabled("goal_streaks", current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Goal Streaks")
-
-    row = _goal_row(current_user.id, db)
-    settings = _goal_settings(row)
-    completions = settings.get("completions", []) if isinstance(settings.get("completions", []), list) else []
-    today = datetime.now(timezone.utc).date().isoformat()
-    settings["completions"] = [c for c in completions if not (c.get("goal_id") == goal_id and c.get("date") == today)]
-    _goal_save(row, settings, db)
-    return {"goal_id": goal_id, "date": today, "streak": _goal_streak(settings["completions"], goal_id)}
+    row = _kanban_row(current_user.id, db)
+    settings = _kanban_settings(row)
+    cards = settings.get("cards", []) if isinstance(settings.get("cards", []), list) else []
+    remaining = [c for c in cards if c.get("id") != card_id]
+    if len(remaining) == len(cards):
+        raise HTTPException(status_code=404, detail="Card not found")
+    settings["cards"] = remaining
+    _kanban_save(row, settings, db)
+    return {"deleted": card_id}
 
 
 @router.post("/task-breakdown/plan")
