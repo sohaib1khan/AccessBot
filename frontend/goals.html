@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#060e1c">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    <title>Kanban Board - AccessBot</title>
+    <title>Task Board - AccessBot</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/settings.css">
     <link rel="stylesheet" href="css/accessibility.css">
@@ -25,7 +25,7 @@
 
         .kanban-board {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 10px;
             margin-top: 12px;
         }
@@ -37,28 +37,79 @@
             padding: 10px;
         }
         .kanban-col h3 { margin: 0 0 8px; font-size: 0.95rem; color: var(--accent); }
-        .kanban-cards { display: flex; flex-direction: column; gap: 8px; }
+        .kanban-cards { display: flex; flex-direction: column; gap: 8px; min-height: 130px; }
         .kanban-card {
             border: 1px solid var(--border-bright);
             border-radius: 8px;
             background: var(--bg-card);
             padding: 8px;
+            cursor: grab;
+            touch-action: manipulation;
         }
+        .kanban-card.dragging { opacity: 0.55; }
         .kanban-card-title { font-weight: 700; margin-bottom: 4px; }
         .kanban-card-note { color: var(--text-secondary); font-size: 0.9rem; white-space: pre-wrap; }
         .kanban-card-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+        .kanban-col.drag-over {
+            outline: 2px dashed var(--accent);
+            outline-offset: 4px;
+        }
+        .kanban-cards.drag-over {
+            outline: 2px dashed var(--accent);
+            outline-offset: 4px;
+            border-radius: 8px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            z-index: 1400;
+        }
+        .modal-overlay.hidden { display: none; }
+        .modal-card {
+            width: min(560px, 100%);
+            max-height: calc(100vh - 24px);
+            overflow: auto;
+            border: 1px solid var(--border-bright, #2a5070);
+            border-radius: 12px;
+            background: var(--bg-card, #132035);
+            padding: 14px;
+        }
+        .modal-title { margin: 0 0 12px; font-size: 1.1rem; color: var(--text-primary, #ddf0ec); }
+        .modal-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+        .modal-field label { color: var(--text-secondary, #9ec3bc); font-size: 0.92rem; }
+        #edit-title, #edit-note, #edit-column {
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 2px solid var(--border-bright, #2a5070);
+            border-radius: 8px;
+            background: var(--bg-base, #0b1829);
+            color: var(--text-primary, #ddf0ec);
+            font: inherit;
+        }
+        #edit-note { min-height: 110px; resize: vertical; }
+        #edit-title:focus, #edit-note:focus, #edit-column:focus { outline: 3px solid rgba(0,196,167,0.20); border-color: var(--accent, #00c4a7); }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 6px; }
 
         @media (max-width: 700px) {
             .kanban-add-row { flex-direction: column; align-items: stretch; }
             #kanban-title, #kanban-column, #kanban-add { width: 100%; }
             .kanban-board { grid-template-columns: 1fr; }
+            .kanban-card-actions .btn { flex: 1; }
+            .modal-card { padding: 12px; border-radius: 10px; }
+            .modal-actions .btn { flex: 1; }
         }
     </style>
 </head>
 <body>
     <div class="settings-container">
         <div class="settings-header">
-            <h1>🗂️ Kanban Board</h1>
+            <h1>🧭 Task Board</h1>
             <div class="header-actions" style="display:flex;gap:10px;flex-wrap:wrap;">
                 <a href="/" class="btn btn-secondary">← Chat</a>
                 <a href="/task-coach.html" class="btn btn-secondary">🧩 Task Coach</a>
@@ -69,15 +120,16 @@
         </div>
 
         <div class="settings-card">
-            <p style="margin-bottom:12px;color:var(--text-secondary)">Organize tasks clearly in Now, Next, and Done columns.</p>
+            <p style="margin-bottom:12px;color:var(--text-secondary)">Plan work from backlog to completion in clear stages.</p>
             <div id="kanban-disabled" class="message error hidden"></div>
 
             <div class="kanban-add-row">
                 <input id="kanban-title" type="text" placeholder="Card title...">
                 <select id="kanban-column">
-                    <option value="now">Now</option>
-                    <option value="next" selected>Next</option>
-                    <option value="done">Done</option>
+                    <option value="backlog" selected>Backlog</option>
+                    <option value="pending">Pending</option>
+                    <option value="inprogress">In Progress</option>
+                    <option value="completed">Completed</option>
                 </select>
                 <button id="kanban-add" class="btn btn-primary">Add Card</button>
             </div>
@@ -86,18 +138,49 @@
             <div id="kanban-msg" class="message hidden"></div>
 
             <div class="kanban-board">
-                <section class="kanban-col">
-                    <h3>Now</h3>
-                    <div id="kanban-now" class="kanban-cards"></div>
+                <section class="kanban-col" data-column="backlog">
+                    <h3>Backlog</h3>
+                    <div id="kanban-backlog" class="kanban-cards" data-column="backlog"></div>
                 </section>
-                <section class="kanban-col">
-                    <h3>Next</h3>
-                    <div id="kanban-next" class="kanban-cards"></div>
+                <section class="kanban-col" data-column="pending">
+                    <h3>Pending</h3>
+                    <div id="kanban-pending" class="kanban-cards" data-column="pending"></div>
                 </section>
-                <section class="kanban-col">
-                    <h3>Done</h3>
-                    <div id="kanban-done" class="kanban-cards"></div>
+                <section class="kanban-col" data-column="inprogress">
+                    <h3>In Progress</h3>
+                    <div id="kanban-inprogress" class="kanban-cards" data-column="inprogress"></div>
                 </section>
+                <section class="kanban-col" data-column="completed">
+                    <h3>Completed</h3>
+                    <div id="kanban-completed" class="kanban-cards" data-column="completed"></div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal-overlay hidden" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+            <h2 id="edit-modal-title" class="modal-title">Edit Task</h2>
+            <div class="modal-field">
+                <label for="edit-title">Title</label>
+                <input id="edit-title" type="text" maxlength="160" placeholder="Task title">
+            </div>
+            <div class="modal-field">
+                <label for="edit-note">Note</label>
+                <textarea id="edit-note" placeholder="Optional details..."></textarea>
+            </div>
+            <div class="modal-field">
+                <label for="edit-column">Stage</label>
+                <select id="edit-column">
+                    <option value="backlog">Backlog</option>
+                    <option value="pending">Pending</option>
+                    <option value="inprogress">In Progress</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button id="edit-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="edit-save" class="btn btn-primary">Save</button>
             </div>
         </div>
     </div>

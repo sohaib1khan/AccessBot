@@ -13,7 +13,7 @@ async function apiFetch(url, options = {}) {
 
 function showDisabled(msg) {
     const d = document.getElementById('kanban-disabled');
-    d.textContent = msg || 'Enable plugin please: Kanban Board (Settings → Plugins).';
+    d.textContent = msg || 'Enable plugin please: Task Board (Settings → Plugins).';
     d.classList.remove('hidden');
     ['kanban-title', 'kanban-note', 'kanban-column', 'kanban-add'].forEach(id => {
         const el = document.getElementById(id);
@@ -36,20 +36,131 @@ function esc(text) {
 }
 
 function columnLabel(col) {
-    if (col === 'now') return 'Now';
-    if (col === 'done') return 'Done';
-    return 'Next';
+    if (col === 'backlog') return 'Backlog';
+    if (col === 'inprogress') return 'In Progress';
+    if (col === 'completed') return 'Completed';
+    return 'Pending';
+}
+
+function normalizeColumn(col) {
+    const raw = String(col || '').toLowerCase();
+    if (raw === 'in_progress') return 'inprogress';
+    if (raw === 'now') return 'inprogress';
+    if (raw === 'next') return 'pending';
+    if (raw === 'done') return 'completed';
+    if (['backlog', 'pending', 'inprogress', 'completed'].includes(raw)) return raw;
+    return 'pending';
+}
+
+let draggedCardId = null;
+let draggedFromColumn = null;
+let editingCard = null;
+
+async function updateCard(cardId, payload) {
+    const r = await apiFetch(`${API_URL}/plugins/task-board/cards/${cardId}`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+    const body = await r.json().catch(() => ({}));
+    if (r.status === 403) {
+        showDisabled(body?.detail);
+        return { ok: false, disabled: true };
+    }
+    if (!r.ok) {
+        showMsg(body?.detail || 'Update failed.', 'error');
+        return { ok: false };
+    }
+    return { ok: true, data: body };
+}
+
+function setupDragTargets() {
+    const cols = document.querySelectorAll('.kanban-col[data-column]');
+    cols.forEach((col) => {
+        col.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            col.classList.add('drag-over');
+        });
+
+        col.addEventListener('dragleave', () => {
+            col.classList.remove('drag-over');
+        });
+
+        col.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            col.classList.remove('drag-over');
+            const targetColumn = normalizeColumn(col.dataset.column);
+            if (!draggedCardId || !targetColumn || draggedFromColumn === targetColumn) return;
+
+            const updated = await updateCard(draggedCardId, { column: targetColumn });
+            if (!updated.ok) return;
+            showMsg(`Moved to ${columnLabel(targetColumn)}.`);
+            await loadCards();
+        });
+    });
+}
+
+function openEditModal(card) {
+    const modal = document.getElementById('edit-modal');
+    const titleEl = document.getElementById('edit-title');
+    const noteEl = document.getElementById('edit-note');
+    const columnEl = document.getElementById('edit-column');
+
+    editingCard = card;
+    titleEl.value = card.title || '';
+    noteEl.value = card.note || '';
+    columnEl.value = normalizeColumn(card.column);
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    setTimeout(() => titleEl.focus(), 0);
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('edit-modal');
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    editingCard = null;
+}
+
+async function saveEditModal() {
+    if (!editingCard) return;
+
+    const title = document.getElementById('edit-title').value.trim();
+    const note = document.getElementById('edit-note').value.trim();
+    const column = normalizeColumn(document.getElementById('edit-column').value);
+
+    if (!title) {
+        showMsg('Title cannot be empty.', 'error');
+        return;
+    }
+
+    const updated = await updateCard(editingCard.id, {
+        title,
+        note,
+        column,
+    });
+    if (!updated.ok) return;
+
+    closeEditModal();
+    showMsg('Card updated.');
+    await loadCards();
 }
 
 async function loadCards() {
-    const nowBox = document.getElementById('kanban-now');
-    const nextBox = document.getElementById('kanban-next');
-    const doneBox = document.getElementById('kanban-done');
-    nowBox.innerHTML = '';
-    nextBox.innerHTML = '';
-    doneBox.innerHTML = '';
+    const backlogBox = document.getElementById('kanban-backlog');
+    const pendingBox = document.getElementById('kanban-pending');
+    const inprogressBox = document.getElementById('kanban-inprogress');
+    const completedBox = document.getElementById('kanban-completed');
+    backlogBox.innerHTML = '';
+    pendingBox.innerHTML = '';
+    inprogressBox.innerHTML = '';
+    completedBox.innerHTML = '';
 
-    const res = await apiFetch(`${API_URL}/plugins/kanban/cards`, {
+    const res = await apiFetch(`${API_URL}/plugins/task-board/cards`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
     });
     const data = await res.json().catch(() => ({}));
@@ -65,44 +176,54 @@ async function loadCards() {
 
     const cards = Array.isArray(data.cards) ? data.cards : [];
     if (!cards.length) {
-        nextBox.innerHTML = '<p class="loading-text">No cards yet. Add your first one above.</p>';
+        pendingBox.innerHTML = '<p class="loading-text">No cards yet. Add your first one above.</p>';
         return;
     }
 
     cards.forEach((card) => {
-        const col = card.column === 'now' || card.column === 'done' ? card.column : 'next';
-        const container = col === 'now' ? nowBox : (col === 'done' ? doneBox : nextBox);
+        const col = normalizeColumn(card.column);
+        const container = col === 'backlog'
+            ? backlogBox
+            : col === 'inprogress'
+                ? inprogressBox
+                : col === 'completed'
+                    ? completedBox
+                    : pendingBox;
         const div = document.createElement('article');
         div.className = 'kanban-card';
         div.dataset.id = card.id;
+        div.dataset.column = col;
+        div.draggable = true;
         div.innerHTML = `
             <div class="kanban-card-title">${esc(card.title)}</div>
             ${card.note ? `<div class="kanban-card-note">${esc(card.note)}</div>` : ''}
             <div class="kanban-card-actions">
-                <button class="btn btn-secondary btn-sm card-move">Move</button>
+                <button class="btn btn-secondary btn-sm card-edit">Edit</button>
                 <button class="btn btn-danger btn-sm card-delete">Delete</button>
             </div>
         `;
 
-        div.querySelector('.card-move')?.addEventListener('click', async () => {
-            const nextCol = col === 'now' ? 'next' : (col === 'next' ? 'done' : 'now');
-            const r = await apiFetch(`${API_URL}/plugins/kanban/cards/${card.id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ column: nextCol })
-            });
-            const body = await r.json().catch(() => ({}));
-            if (r.status === 403) { showDisabled(body?.detail); return; }
-            if (!r.ok) { showMsg(body?.detail || 'Move failed.', 'error'); return; }
-            showMsg(`Moved to ${columnLabel(nextCol)}.`);
-            await loadCards();
+        div.addEventListener('dragstart', (e) => {
+            draggedCardId = card.id;
+            draggedFromColumn = col;
+            div.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', card.id);
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        div.addEventListener('dragend', () => {
+            div.classList.remove('dragging');
+            draggedCardId = null;
+            draggedFromColumn = null;
+            document.querySelectorAll('.kanban-col.drag-over').forEach((lane) => lane.classList.remove('drag-over'));
+        });
+
+        div.querySelector('.card-edit')?.addEventListener('click', async () => {
+            openEditModal(card);
         });
 
         div.querySelector('.card-delete')?.addEventListener('click', async () => {
-            const r = await apiFetch(`${API_URL}/plugins/kanban/cards/${card.id}`, {
+            const r = await apiFetch(`${API_URL}/plugins/task-board/cards/${card.id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
@@ -124,7 +245,7 @@ async function addCard() {
     const title = titleEl.value.trim();
     if (!title) return;
 
-    const res = await apiFetch(`${API_URL}/plugins/kanban/cards`, {
+    const res = await apiFetch(`${API_URL}/plugins/task-board/cards`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${authToken}`,
@@ -149,7 +270,7 @@ async function addCard() {
 
     titleEl.value = '';
     noteEl.value = '';
-    columnEl.value = 'next';
+    columnEl.value = 'backlog';
     showMsg('Card added.');
     await loadCards();
 }
@@ -171,6 +292,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             addCard();
         }
     });
+
+    document.getElementById('edit-save')?.addEventListener('click', saveEditModal);
+    document.getElementById('edit-cancel')?.addEventListener('click', closeEditModal);
+    document.getElementById('edit-modal')?.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'edit-modal') closeEditModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeEditModal();
+    });
+
+    setupDragTargets();
 
     await loadCards();
 });

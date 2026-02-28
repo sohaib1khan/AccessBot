@@ -4,8 +4,8 @@ from app.plugins.base_plugin import BasePlugin
 
 class KanbanBoardPlugin(BasePlugin):
     name = "kanban_board"
-    display_name = "Kanban Board"
-    description = "Simple personal board with Now, Next, and Done columns to organize tasks clearly."
+    display_name = "Task Board"
+    description = "Track personal tasks with Backlog, Pending, In Progress, and Completed stages."
 
     async def get_context(self, user_id: int, db: Any) -> str | None:
         return None

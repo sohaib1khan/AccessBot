@@ -46,9 +46,9 @@
         },
         kanban: {
             url: '/goals.html',
-            label: 'Kanban Board',
-            emoji: '🗂️',
-            desc: 'Organize tasks in simple Now, Next, and Done columns.',
+            label: 'Task Board',
+            emoji: '🧭',
+            desc: 'Organize tasks in Backlog, Pending, In Progress, and Completed columns.',
         },
         urgent: {
             url: '/urgent.html',
@@ -101,8 +101,8 @@
         },
         {
             page: 'kanban',
-            patterns: ['kanban', 'board', 'task board', 'columns', 'now next done', 'organize tasks', 'todo board'],
-            reply: 'The **Kanban Board** page helps you organize tasks in clear **Now / Next / Done** columns.',
+            patterns: ['kanban', 'board', 'task board', 'workflow board', 'columns', 'backlog pending in progress completed', 'organize tasks', 'todo board'],
+            reply: 'The **Task Board** page helps you organize tasks in clear **Backlog / Pending / In Progress / Completed** columns.',
         },
         {
             page: 'urgent',
@@ -155,7 +155,7 @@
         { label: '📋 Check in', query: 'where do I log my mood' },
         { label: '📊 View stats', query: 'show me my insights' },
         { label: '🧩 Task coach', query: 'open task breakdown coach' },
-        { label: '🗂️ Kanban', query: 'open kanban board' },
+        { label: '🧭 Task Board', query: 'open task board' },
         { label: '🆘 Urgent support', query: 'open urgent support' },
         { label: '⚡ Recharge', query: 'open recharge page' },
         { label: '🗂️ Resources', query: 'show resources' },

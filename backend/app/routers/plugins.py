@@ -112,7 +112,7 @@ class UrgentChatRequest(BaseModel):
 class KanbanCardCreateRequest(BaseModel):
     title: str
     note: str | None = None
-    column: str = "now"
+    column: str = "pending"
 
 
 class KanbanCardUpdateRequest(BaseModel):
@@ -126,6 +126,21 @@ class TaskBreakdownRequest(BaseModel):
 
 
 VALID_RECHARGE_TYPES = {"article", "video", "audio"}
+VALID_TASK_BOARD_COLUMNS = {"backlog", "pending", "inprogress", "completed"}
+
+
+def _normalize_task_board_column(column: str | None, fallback: str = "pending") -> str:
+    raw = (column or "").strip().lower()
+    if raw == "in_progress":
+        raw = "inprogress"
+
+    legacy_map = {
+        "now": "inprogress",
+        "next": "pending",
+        "done": "completed",
+    }
+    mapped = legacy_map.get(raw, raw)
+    return mapped if mapped in VALID_TASK_BOARD_COLUMNS else fallback
 
 
 def _kanban_row(user_id: int, db: Session) -> UserPlugin:
@@ -680,33 +695,34 @@ async def urgent_session_chat(
     return {"message": reply}
 
 
+@router.get("/task-board/cards")
 @router.get("/kanban/cards")
 async def kanban_list_cards(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     if not plugin_manager.is_enabled("kanban_board", current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Kanban Board")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Task Board")
 
     row = _kanban_row(current_user.id, db)
     settings = _kanban_settings(row)
     cards = settings.get("cards", []) if isinstance(settings.get("cards", []), list) else []
 
-    valid_columns = {"now", "next", "done"}
     normalized = []
     for c in cards:
-        col = c.get("column", "next")
+        col = _normalize_task_board_column(c.get("column"), "pending")
         normalized.append({
             "id": c.get("id"),
             "title": c.get("title", ""),
             "note": c.get("note") or "",
-            "column": col if col in valid_columns else "next",
+            "column": col,
             "created_at": c.get("created_at"),
             "updated_at": c.get("updated_at"),
         })
     return {"cards": normalized}
 
 
+@router.post("/task-board/cards")
 @router.post("/kanban/cards")
 async def kanban_add_card(
     data: KanbanCardCreateRequest,
@@ -714,15 +730,13 @@ async def kanban_add_card(
     db: Session = Depends(get_db)
 ):
     if not plugin_manager.is_enabled("kanban_board", current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Kanban Board")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Task Board")
 
     title = (data.title or "").strip()
     if not title:
         raise HTTPException(status_code=400, detail="title is required")
 
-    column = (data.column or "next").strip().lower()
-    if column not in {"now", "next", "done"}:
-        column = "next"
+    column = _normalize_task_board_column(data.column, "pending")
 
     row = _kanban_row(current_user.id, db)
     settings = _kanban_settings(row)
@@ -742,6 +756,7 @@ async def kanban_add_card(
     return card
 
 
+@router.patch("/task-board/cards/{card_id}")
 @router.patch("/kanban/cards/{card_id}")
 async def kanban_update_card(
     card_id: str,
@@ -750,7 +765,7 @@ async def kanban_update_card(
     db: Session = Depends(get_db)
 ):
     if not plugin_manager.is_enabled("kanban_board", current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Kanban Board")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Task Board")
 
     row = _kanban_row(current_user.id, db)
     settings = _kanban_settings(row)
@@ -766,9 +781,9 @@ async def kanban_update_card(
             if data.note is not None:
                 card["note"] = data.note[:1000]
             if data.column is not None:
-                column = data.column.strip().lower()
-                if column not in {"now", "next", "done"}:
-                    raise HTTPException(status_code=400, detail="column must be one of: now, next, done")
+                column = _normalize_task_board_column(data.column, "")
+                if column not in VALID_TASK_BOARD_COLUMNS:
+                    raise HTTPException(status_code=400, detail="column must be one of: backlog, pending, inprogress, completed")
                 card["column"] = column
             card["updated_at"] = datetime.now(timezone.utc).isoformat()
             settings["cards"] = cards
@@ -778,6 +793,7 @@ async def kanban_update_card(
     raise HTTPException(status_code=404, detail="Card not found")
 
 
+@router.delete("/task-board/cards/{card_id}")
 @router.delete("/kanban/cards/{card_id}")
 async def kanban_delete_card(
     card_id: str,
@@ -785,7 +801,7 @@ async def kanban_delete_card(
     db: Session = Depends(get_db)
 ):
     if not plugin_manager.is_enabled("kanban_board", current_user.id, db):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Kanban Board")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enable plugin please: Task Board")
 
     row = _kanban_row(current_user.id, db)
     settings = _kanban_settings(row)
