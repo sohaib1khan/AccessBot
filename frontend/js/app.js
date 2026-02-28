@@ -856,6 +856,40 @@ async function submitFeedback(dbMessageId, vote) {
     }
 }
 
+function normalizeChatError(detailText, statusCode = null) {
+    const raw = String(detailText || '').trim();
+    const lower = raw.toLowerCase();
+
+    const looksHtml = /<[^>]+>/.test(raw) || lower.includes('<!doctype') || lower.includes('<html');
+    const llmNotConfigured =
+        lower.includes('llm not configured') ||
+        lower.includes('save your settings first') ||
+        lower.includes('api endpoint') ||
+        lower.includes('provider not configured') ||
+        lower.includes('missing api key');
+    const gatewayLike =
+        statusCode === 502 || statusCode === 503 || statusCode === 504 ||
+        lower.includes('bad gateway') ||
+        lower.includes('gateway') ||
+        lower.includes('service unavailable') ||
+        lower.includes('upstream') ||
+        lower.includes('helix') ||
+        lower.includes('cloudflare') ||
+        lower.includes('nginx');
+
+    if (llmNotConfigured) {
+        return 'No LLM is configured yet. Open Settings, save your model/API endpoint and key, then retry.';
+    }
+
+    if (looksHtml || gatewayLike) {
+        return 'The AI provider is unavailable right now (gateway error). Check your LLM endpoint/settings in Settings and retry.';
+    }
+
+    if (!raw) return 'Failed to get a response from the AI service.';
+    if (raw.length > 320) return `${raw.slice(0, 320)}…`;
+    return raw;
+}
+
 // Core API call — shared by sendMessage and retrySend
 async function dispatchToLLM(payload, loadingId) {
     const { message, capturedImage, conversationId } = payload;
@@ -927,7 +961,7 @@ async function dispatchToLLM(payload, loadingId) {
                 detailText = 'The server timed out waiting for the model. Your message may still be processing. Please stay in this chat and retry shortly.';
             }
 
-            showErrorBubble(detailText);
+            showErrorBubble(normalizeChatError(detailText, response.status));
         }
     } catch (error) {
         removeMessage(loadingId);
