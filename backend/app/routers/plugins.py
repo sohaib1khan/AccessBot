@@ -50,6 +50,7 @@ class CheckinStatusResponse(BaseModel):
 class CheckinUpdateRequest(BaseModel):
     mood: str
     note: str | None = None
+    checkin_date: str | None = None  # YYYY-MM-DD optional when moving an entry
 
 
 class AISuggestRequest(BaseModel):
@@ -393,7 +394,7 @@ async def submit_checkin(
     # Upsert: update check-in for target date if it already exists
     existing = _checkin_for_date(current_user.id, target_date, db)
     if existing:
-        existing.metric_value = {"mood": data.mood, "note": data.note or ""}
+        existing.metric_value = {"mood": data.mood, "note": data.note or "", "checkin_date": target_date.isoformat()}
         flag_modified(existing, "metric_value")
         db.commit()
         db.refresh(existing)
@@ -411,7 +412,7 @@ async def submit_checkin(
     entry = UserAnalytics(
         user_id=current_user.id,
         metric_type="checkin",
-        metric_value={"mood": data.mood, "note": data.note or ""},
+        metric_value={"mood": data.mood, "note": data.note or "", "checkin_date": target_date.isoformat()},
         recorded_at=entry_time,
     )
     db.add(entry)
@@ -465,13 +466,14 @@ async def checkin_history(
     result = []
     for e in entries:
         mood = e.metric_value.get("mood", "okay")
+        checkin_date = e.metric_value.get("checkin_date") if isinstance(e.metric_value, dict) else None
         result.append({
             "id": e.id,
             "mood": mood,
             "label": MOOD_LABELS_LOCAL.get(mood, mood),
             "emoji": MOOD_EMOJI_LOCAL.get(mood, ""),
             "note": e.metric_value.get("note", ""),
-            "date": e.recorded_at.strftime("%Y-%m-%d"),
+            "date": checkin_date or e.recorded_at.strftime("%Y-%m-%d"),
             "recorded_at": e.recorded_at.isoformat(),
         })
     return {"entries": result}
@@ -541,7 +543,28 @@ async def update_checkin(
         raise HTTPException(status_code=404, detail="Check-in not found.")
     if data.mood not in MOOD_LABELS_LOCAL:
         raise HTTPException(status_code=400, detail=f"Invalid mood '{data.mood}'.")
-    entry.metric_value = {"mood": data.mood, "note": data.note or ""}
+    target_date = _parse_checkin_date(data.checkin_date) if data.checkin_date else None
+    if target_date:
+        existing_for_target = _checkin_for_date(current_user.id, target_date, db)
+        if existing_for_target and existing_for_target.id != entry.id:
+            existing_for_target.metric_value = {"mood": data.mood, "note": data.note or "", "checkin_date": target_date.isoformat()}
+            flag_modified(existing_for_target, "metric_value")
+            db.delete(entry)
+            db.commit()
+            db.refresh(existing_for_target)
+            return {
+                "id": existing_for_target.id,
+                "mood": data.mood,
+                "label": MOOD_LABELS_LOCAL[data.mood],
+                "emoji": MOOD_EMOJI_LOCAL.get(data.mood, ""),
+                "note": data.note or "",
+                "date": target_date.isoformat(),
+                "recorded_at": existing_for_target.recorded_at.isoformat(),
+            }
+
+        entry.recorded_at = datetime.combine(target_date, datetime.min.time()).replace(tzinfo=timezone.utc) + timedelta(hours=12)
+
+    entry.metric_value = {"mood": data.mood, "note": data.note or "", **({"checkin_date": target_date.isoformat()} if target_date else {})}
     flag_modified(entry, "metric_value")
     db.commit()
     db.refresh(entry)
@@ -551,6 +574,7 @@ async def update_checkin(
         "label": MOOD_LABELS_LOCAL[data.mood],
         "emoji": MOOD_EMOJI_LOCAL.get(data.mood, ""),
         "note": data.note or "",
+        "date": (target_date.isoformat() if target_date else entry.recorded_at.strftime("%Y-%m-%d")),
         "recorded_at": entry.recorded_at.isoformat(),
     }
 

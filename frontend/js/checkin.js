@@ -123,7 +123,7 @@ async function loadTodayStatus() {
                     <button class="btn btn-secondary btn-sm" id="edit-today-btn">✏️ Edit today's check-in</button>
                 </div>`;
             document.getElementById('edit-today-btn').addEventListener('click', () => {
-                startEdit(data.todays_id, data.todays_mood, data.todays_note || '', "today's check-in");
+                startEdit(data.todays_id, data.todays_mood, data.todays_note || '', "today's check-in", todayISO());
             });
             // Already checked in — hide form by default
             document.getElementById('form-card').classList.add('hidden');
@@ -161,14 +161,16 @@ async function loadTodayStatus() {
 
 // ── Form ──────────────────────────────────────────────────────────────────────
 
-function startEdit(entryId, mood, note, label) {
+function startEdit(entryId, mood, note, label, entryDate = null) {
     editingEntryId = entryId || null;
     document.getElementById('form-title').textContent = `Edit check-in${label ? ' — ' + label : ''}`;
     document.getElementById('form-icon').textContent  = '✏️';
     document.getElementById('checkin-note').value     = note;
     if (mood) selectMoodBtn(mood);
     const dateInput = document.getElementById('checkin-date');
-    dateInput.disabled = true;
+    dateInput.disabled = false;
+    dateInput.max = todayISO();
+    if (entryDate) dateInput.value = entryDate;
     document.getElementById('form-cancel-btn').classList.remove('hidden');
     document.getElementById('form-submit-btn').textContent = 'Update Check-in';
     document.getElementById('form-card').classList.remove('hidden');
@@ -250,10 +252,11 @@ async function submitCheckin() {
     try {
         let res;
         if (isEdit) {
+            const checkinDate = document.getElementById('checkin-date').value || todayISO();
             res = await apiFetch(`${API_URL}/plugins/checkin/${editingEntryId}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mood: selectedMood, note })
+                body: JSON.stringify({ mood: selectedMood, note, checkin_date: checkinDate })
             });
         } else {
             const checkinDate = document.getElementById('checkin-date').value || todayISO();
@@ -432,8 +435,7 @@ async function loadHistory() {
             btn.addEventListener('click', () => {
                 const e = _entries[parseInt(btn.dataset.id)];
                 if (e) {
-                    startEdit(e.id, e.mood, e.note || '', formatDate(e.date));
-                    document.getElementById('checkin-date').value = e.date;
+                    startEdit(e.id, e.mood, e.note || '', formatDate(e.date), e.date);
                 }
             });
         });
