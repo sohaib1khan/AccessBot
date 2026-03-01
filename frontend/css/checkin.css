@@ -89,6 +89,74 @@
 }
 .ci-reminder-sub strong { color: var(--text-primary); }
 
+/* ── Weekly coverage ───────────────────────────────────────── */
+.ci-week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.ci-week-day {
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius-sm);
+    padding: 10px 8px;
+    background: var(--bg-raised);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ci-week-day.missed {
+    border-color: rgba(251, 191, 36, 0.45);
+    background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(245,158,11,0.03));
+}
+
+.ci-week-date {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.ci-week-status {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 0.86rem;
+    min-height: 36px;
+}
+
+.ci-week-action {
+    margin-top: auto;
+}
+
+.ci-week-chip.ok {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--success-border);
+    color: var(--success);
+    background: var(--success-bg);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+#checkin-date {
+    min-height: 42px;
+    width: min(260px, 100%);
+    padding: 8px 10px;
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font: inherit;
+}
+
+#checkin-date:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-color: var(--accent);
+}
+
 /* ── Mood selector ─────────────────────────────────────────── */
 .mood-selector {
     display: flex;
@@ -270,4 +338,7 @@
     .ci-date-col { display: none; }   /* hide on very small screens */
     .ci-table th:nth-child(1),
     .ci-table td:nth-child(1) { display: none; }
+
+    .ci-week-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ci-week-status { min-height: 0; }
 }

@@ -13,7 +13,7 @@ from app.plugins.manager import plugin_manager
 from app.plugins.daily_checkin.plugin import daily_checkin_plugin
 from app.plugins.mood_tracker.plugin import mood_tracker_plugin
 from app.plugins.recharge.plugin import recharge_plugin
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
 
 router = APIRouter()
 
@@ -34,6 +34,7 @@ class PluginToggleRequest(BaseModel):
 class CheckinRequest(BaseModel):
     mood: str        # 'great' | 'good' | 'okay' | 'tired' | 'struggling'
     note: str | None = None
+    checkin_date: str | None = None  # YYYY-MM-DD (optional backfill date)
 
 
 class CheckinStatusResponse(BaseModel):
@@ -248,6 +249,37 @@ def _validate_recharge_payload(data: RechargeItemInput) -> dict:
     }
 
 
+def _parse_checkin_date(checkin_date_str: str | None) -> date:
+    if not checkin_date_str:
+        return date.today()
+
+    try:
+        target_date = datetime.strptime(checkin_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="checkin_date must be YYYY-MM-DD")
+
+    if target_date > date.today():
+        raise HTTPException(status_code=400, detail="checkin_date cannot be in the future")
+
+    return target_date
+
+
+def _checkin_for_date(user_id: int, target_date: date, db: Session) -> UserAnalytics | None:
+    start = datetime.combine(target_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+    end = start + timedelta(days=1)
+    return (
+        db.query(UserAnalytics)
+        .filter(
+            UserAnalytics.user_id == user_id,
+            UserAnalytics.metric_type == "checkin",
+            UserAnalytics.recorded_at >= start,
+            UserAnalytics.recorded_at < end,
+        )
+        .order_by(UserAnalytics.recorded_at.desc())
+        .first()
+    )
+
+
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.get("", response_model=List[PluginInfo])
@@ -342,7 +374,7 @@ async def submit_checkin(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Submit or update today's daily check-in (upsert — no duplicates)."""
+    """Submit or update a daily check-in for today or a past date (upsert per date)."""
     if not plugin_manager.is_enabled("daily_checkin", current_user.id, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Daily check-in plugin is disabled")
 
@@ -356,8 +388,10 @@ async def submit_checkin(
     if data.mood not in MOOD_LABELS_LOCAL:
         raise HTTPException(status_code=400, detail=f"Invalid mood '{data.mood}'.")
 
-    # Upsert: update today's entry if it already exists
-    existing = daily_checkin_plugin._todays_checkin(current_user.id, db)
+    target_date = _parse_checkin_date(data.checkin_date)
+
+    # Upsert: update check-in for target date if it already exists
+    existing = _checkin_for_date(current_user.id, target_date, db)
     if existing:
         existing.metric_value = {"mood": data.mood, "note": data.note or ""}
         flag_modified(existing, "metric_value")
@@ -369,14 +403,30 @@ async def submit_checkin(
             "label": MOOD_LABELS_LOCAL[data.mood],
             "emoji": MOOD_EMOJI_LOCAL.get(data.mood, ""),
             "note": data.note or "",
+            "date": target_date.isoformat(),
             "recorded_at": existing.recorded_at.isoformat(),
         }
 
-    try:
-        result = daily_checkin_plugin.submit_checkin(current_user.id, data.mood, data.note, db)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    return result
+    entry_time = datetime.combine(target_date, datetime.min.time()).replace(tzinfo=timezone.utc) + timedelta(hours=12)
+    entry = UserAnalytics(
+        user_id=current_user.id,
+        metric_type="checkin",
+        metric_value={"mood": data.mood, "note": data.note or ""},
+        recorded_at=entry_time,
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+
+    return {
+        "id": entry.id,
+        "mood": data.mood,
+        "label": MOOD_LABELS_LOCAL[data.mood],
+        "emoji": MOOD_EMOJI_LOCAL.get(data.mood, ""),
+        "note": data.note or "",
+        "date": target_date.isoformat(),
+        "recorded_at": entry.recorded_at.isoformat(),
+    }
 
 
 @router.get("/checkin/history")

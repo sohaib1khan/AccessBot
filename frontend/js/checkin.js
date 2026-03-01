@@ -30,6 +30,17 @@ let selectedMood    = '';
 let editingEntryId  = null;  // null = new check-in, number = edit existing
 let checkinPluginDisabled = false;
 
+function todayISO() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function initDateInput() {
+    const dateInput = document.getElementById('checkin-date');
+    const today = todayISO();
+    dateInput.max = today;
+    dateInput.value = today;
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -38,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     buildMoodSelector();
+    initDateInput();
     setupFormListeners();
     loadPage();
 
@@ -155,6 +167,8 @@ function startEdit(entryId, mood, note, label) {
     document.getElementById('form-icon').textContent  = '✏️';
     document.getElementById('checkin-note').value     = note;
     if (mood) selectMoodBtn(mood);
+    const dateInput = document.getElementById('checkin-date');
+    dateInput.disabled = true;
     document.getElementById('form-cancel-btn').classList.remove('hidden');
     document.getElementById('form-submit-btn').textContent = 'Update Check-in';
     document.getElementById('form-card').classList.remove('hidden');
@@ -207,7 +221,21 @@ function resetForm() {
     document.getElementById('ai-help-panel').classList.add('hidden');
     document.getElementById('ai-suggestion-box').classList.add('hidden');
     document.getElementById('ai-context').value                = '';
+    const dateInput = document.getElementById('checkin-date');
+    dateInput.disabled = false;
+    dateInput.max = todayISO();
+    dateInput.value = todayISO();
     hideFormMessage();
+}
+
+function openBackfillForDate(dateStr) {
+    resetForm();
+    const dateInput = document.getElementById('checkin-date');
+    dateInput.value = dateStr;
+    document.getElementById('form-title').textContent = `Check in — ${formatDate(dateStr)}`;
+    document.getElementById('form-icon').textContent  = '🗓️';
+    document.getElementById('form-card').classList.remove('hidden');
+    document.getElementById('form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function submitCheckin() {
@@ -228,10 +256,11 @@ async function submitCheckin() {
                 body: JSON.stringify({ mood: selectedMood, note })
             });
         } else {
+            const checkinDate = document.getElementById('checkin-date').value || todayISO();
             res = await apiFetch(`${API_URL}/plugins/checkin`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mood: selectedMood, note })
+                body: JSON.stringify({ mood: selectedMood, note, checkin_date: checkinDate })
             });
         }
 
@@ -293,6 +322,63 @@ async function getAISuggestion() {
 
 let _entries = {};
 
+function getRecentDays(count = 7) {
+    const result = [];
+    const base = new Date();
+    for (let i = count - 1; i >= 0; i--) {
+        const d = new Date(base);
+        d.setDate(base.getDate() - i);
+        result.push(d.toISOString().slice(0, 10));
+    }
+    return result;
+}
+
+function renderWeekCoverage(entries) {
+    const weekLoading = document.getElementById('week-loading');
+    const weekGrid = document.getElementById('week-grid');
+    const weekMissed = document.getElementById('week-missed');
+    if (!weekLoading || !weekGrid || !weekMissed) return;
+
+    const entryByDate = {};
+    (entries || []).forEach((entry) => {
+        if (entry?.date && !entryByDate[entry.date]) entryByDate[entry.date] = entry;
+    });
+
+    const weekDays = getRecentDays(7);
+    const missed = weekDays.filter((day) => !entryByDate[day]);
+
+    weekGrid.innerHTML = weekDays.map((day) => {
+        const entry = entryByDate[day];
+        const checked = !!entry;
+        const mood = checked ? `${entry.emoji || ''} ${entry.label || ''}`.trim() : 'Missed';
+        const action = checked
+            ? `<span class="ci-week-chip ok">Logged</span>`
+            : `<button type="button" class="btn btn-sm btn-primary week-add-btn" data-date="${day}">Add</button>`;
+        return `
+            <article class="ci-week-day ${checked ? 'checked' : 'missed'}" role="listitem">
+                <p class="ci-week-date">${formatDateShort(day)}</p>
+                <p class="ci-week-status">${escHtml(mood)}</p>
+                <div class="ci-week-action">${action}</div>
+            </article>
+        `;
+    }).join('');
+
+    weekGrid.classList.remove('hidden');
+    weekLoading.classList.add('hidden');
+
+    if (missed.length) {
+        const list = missed.map(formatDateShort).join(', ');
+        weekMissed.innerHTML = `You missed <strong>${missed.length}</strong> day(s) this week: ${escHtml(list)}.`;
+    } else {
+        weekMissed.textContent = 'Nice consistency — no missed days this week.';
+    }
+    weekMissed.classList.remove('hidden');
+
+    weekGrid.querySelectorAll('.week-add-btn').forEach((btn) => {
+        btn.addEventListener('click', () => openBackfillForDate(btn.dataset.date));
+    });
+}
+
 async function loadHistory() {
     const loadingEl  = document.getElementById('history-loading');
     const emptyEl    = document.getElementById('history-empty');
@@ -315,6 +401,7 @@ async function loadHistory() {
         }
         if (!res.ok) { loadingEl.textContent = 'Failed to load history.'; return; }
         const data = await res.json();
+        renderWeekCoverage(data.entries || []);
 
         loadingEl.classList.add('hidden');
         _entries = {};
@@ -344,7 +431,10 @@ async function loadHistory() {
         tbody.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const e = _entries[parseInt(btn.dataset.id)];
-                if (e) startEdit(e.id, e.mood, e.note || '', formatDate(e.date));
+                if (e) {
+                    startEdit(e.id, e.mood, e.note || '', formatDate(e.date));
+                    document.getElementById('checkin-date').value = e.date;
+                }
             });
         });
 
@@ -354,6 +444,8 @@ async function loadHistory() {
 
     } catch (e) {
         loadingEl.textContent = 'Failed to load history.';
+        const weekLoading = document.getElementById('week-loading');
+        if (weekLoading) weekLoading.textContent = 'Failed to load week summary.';
         console.error(e);
     }
 }
@@ -421,6 +513,9 @@ function showCheckinDisabledState() {
     const emptyEl = document.getElementById('history-empty');
     const tableWrap = document.getElementById('history-table-wrap');
     const aiPanel = document.getElementById('ai-help-panel');
+    const weekLoading = document.getElementById('week-loading');
+    const weekGrid = document.getElementById('week-grid');
+    const weekMissed = document.getElementById('week-missed');
 
     if (statusEl) {
         statusEl.innerHTML = '<p class="ci-muted">Enable plugin please: Daily Check-in (Settings → Plugins).</p>';
@@ -434,4 +529,10 @@ function showCheckinDisabledState() {
     }
     if (emptyEl) emptyEl.classList.add('hidden');
     if (tableWrap) tableWrap.classList.add('hidden');
+    if (weekLoading) {
+        weekLoading.classList.remove('hidden');
+        weekLoading.textContent = 'Enable plugin please: Daily Check-in.';
+    }
+    if (weekGrid) weekGrid.classList.add('hidden');
+    if (weekMissed) weekMissed.classList.add('hidden');
 }

@@ -43,6 +43,18 @@
             </div>
         </div>
 
+        <!-- Weekly coverage dashboard -->
+        <div class="settings-card" id="week-card">
+            <div class="settings-card-header">
+                <span class="section-icon" aria-hidden="true">🗓️</span>
+                <h2>Weekly Coverage</h2>
+            </div>
+            <p class="ci-muted" style="margin-bottom:10px;">Missed a day? Tap any missed date below to add a backdated check-in.</p>
+            <div id="week-loading" class="ci-state-msg" role="status" aria-live="polite">Loading week summary…</div>
+            <div id="week-grid" class="ci-week-grid hidden" role="list" aria-label="Last 7 days check-in status"></div>
+            <div id="week-missed" class="ci-state-msg hidden"></div>
+        </div>
+
         <!-- Check-in / Edit form -->
         <div class="settings-card hidden" id="form-card">
             <div class="settings-card-header">
@@ -51,6 +63,13 @@
             </div>
 
             <form id="checkin-form" novalidate>
+
+                <!-- Date selector for backfill -->
+                <div class="form-group">
+                    <label for="checkin-date">Check-in date</label>
+                    <input type="date" id="checkin-date" aria-describedby="checkin-date-hint">
+                    <p id="checkin-date-hint" class="ci-muted" style="margin-top:6px;">You can submit for today or any past day.</p>
+                </div>
 
                 <!-- Mood selector -->
                 <div class="form-group">
